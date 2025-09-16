@@ -9,8 +9,8 @@ def run_test_params(
     sut_class: type[SystemUnderTest],
     db_path: str,
     testing_params: list[TestParamGroup],
-    warmup_rounds: int = 1,
-    measure_rounds: int = 3,
+    warmup_rounds: int = 2,
+    measure_rounds: int = 5,
     skip_duplicated: bool = True,
     store_into_db: bool = True
 ):

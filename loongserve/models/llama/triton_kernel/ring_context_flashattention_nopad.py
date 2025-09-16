@@ -207,6 +207,7 @@ if triton.__version__ >= "2.1.0":
         """
         context_attention_fwd - Calculate the attention between local Q and local/remote KV
         
+        ring attention
         This kernel is called during ring-attention stage in the context stage. In
         ring attention, SP workers repeatedly send their KV to the next worker, and
         calculate the attention between their local Q and the remote KV they receive.
@@ -231,10 +232,12 @@ if triton.__version__ >= "2.1.0":
             - max_q_b_seq_len: equal to q_b_seq_len.max().item()
             - m/l: temporary buffers
         """
-        
+        '''
         BLOCK_M = 128 if not TESLA and not RTX4090 else 64
         BLOCK_N = 128 if not TESLA and not RTX4090 else 64
-        
+        '''
+        BLOCK_M = 64
+        BLOCK_N = 64 
         # Here we reduce BLOCK_M and BLOCK_N, since that when max_q_b_seq_len is
         # small, large BLOCK_SIZE introduces unnecessary computation when computing
         # the attention score.
@@ -262,6 +265,8 @@ if triton.__version__ >= "2.1.0":
         grid = (batch_size, num_q_heads, triton.cdiv(max_q_b_seq_len, BLOCK_M))
 
         num_warps = 4 if Lk <= 64 else 8
+
+        #print(f"[syd] prefill")
         _fwd_kernel[grid](
             q, k, v, sm_scale,
             q_b_start_loc, q_b_seq_len, q_first_token_global_idx,

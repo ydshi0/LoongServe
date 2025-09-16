@@ -37,7 +37,7 @@ ext_modules = [
 		library_dirs=library_dirs,
         extra_compile_args={
             'cxx': ['-O2'],
-            'nvcc': ['-O3', '--use_fast_math']
+            'nvcc': ['-O3', '--use_fast_math','-gencode=arch=compute_86,code=sm_86']
         }
     ),
 ]

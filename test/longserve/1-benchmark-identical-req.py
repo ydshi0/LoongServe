@@ -42,8 +42,8 @@ def get_ae_toy_example_params() :
         worker_param = WorkerParam(
             model_dir = os.environ.get("LWM_WEIGHT_PATH", "Env `LWM_WEIGHT_PATH` is not set!"),
             mode = ["_token_decode_attention_overlapped"],
-            sp_world_size = 4,
-            tp_world_size = 2,
+            sp_world_size = 2,
+            tp_world_size = 1,
             max_total_token_num = 210000,
             max_req_num = 1024,
             max_seq_len = 210000
@@ -77,8 +77,6 @@ def get_sp_vs_tp_testing_params():
         [
             (1, 1),
             (2, 1), (1, 2),
-            (4, 1), (2, 2), (1, 4),
-            (8, 1), (4, 2), (2, 4), (1, 8)
         ]
     ]
     testing_params = [
@@ -93,7 +91,7 @@ def get_sp_vs_tp_testing_params():
                     need_context_migration = False,
                     num_decoding_stage_migration = 0
                 )
-                for input_len in [10, 100, 1000, 10000, 20000, 50000, 100000, 200000, 400000]
+                for input_len in [10, 100, 1000, 10000]
                 if not (input_len >= 200000 and worker_param.sp_world_size * worker_param.tp_world_size <= 2)
                 if not (input_len >= 400000 and worker_param.sp_world_size * worker_param.tp_world_size <= 4)
             ]
@@ -112,9 +110,9 @@ def get_time_with_batch_size_params(enable_multi_node: bool):
             mode = ["_token_decode_attention_overlapped"],
             sp_world_size = sp_world_size,
             tp_world_size = tp_world_size,
-            max_total_token_num = 101000 * tp_world_size,
+            max_total_token_num = 10100 * tp_world_size,
             max_req_num = 1024,
-            max_seq_len = 510000
+            max_seq_len = 51000
         ) for (sp_world_size, tp_world_size) in
         [
             (1, 1),
@@ -144,8 +142,8 @@ def get_time_with_batch_size_params(enable_multi_node: bool):
                     need_context_migration = False,
                     num_decoding_stage_migration = 0
                 )
-                for batch_size in [1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 196, 256, 384, 512, 768, 1024]
-                for input_len in [10, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 400000, 500000]
+                for batch_size in [1, 2, 4, 8, 16]
+                for input_len in [10, 50, 100]
                 if batch_size*(input_len+16*worker_param.sp_world_size) <= (worker_param.max_total_token_num-100)*worker_param.sp_world_size
                 if not (input_len >= 200000 and worker_param.sp_world_size*worker_param.tp_world_size <= 2)
                 if not (input_len >= 400000 and worker_param.sp_world_size*worker_param.tp_world_size <= 4)
@@ -185,8 +183,8 @@ def get_tp_benchmark_params():
                     need_context_migration = False,
                     num_decoding_stage_migration = 0
                 )
-                for input_len in [10, 100, 1000, 5000, 10000, 20000, 50000, 100000, 200000, 400000]
-                for batch_size in [1, 2, 4, 8, 16, 32, 48]
+                for input_len in [10, 100, 1000, 5000, 10000]
+                for batch_size in [1, 2, 4, 8, 16, 32]
                 if batch_size*input_len <= worker_param.max_total_token_num
                 if not (input_len >= 200000 and worker_param.tp_world_size <= 2)
                 if not (batch_size*input_len >= 640000)
@@ -221,9 +219,9 @@ def get_scale_up_params():
                     num_decoding_stage_migration = 0
                 )
                 for (batch_size, input_len) in [
-                    (1024, 10), (256, 100), (64, 1000), (16, 10000), (4, 50000), (2, 100000), (1, 200000)
+                    (32, 10), (16, 100), (8, 1000), (4, 10000)
                 ]
-                for num_sp_master in [1, 2, 4]
+                for num_sp_master in [1, 2]
             ]
         )
     ]
@@ -238,8 +236,8 @@ def get_scale_down_params():
             worker_param=WorkerParam(
                 model_dir = os.environ.get("LWM_WEIGHT_PATH", "Env `LWM_WEIGHT_PATH` is not set!"),
                 mode = ["_token_decode_attention_overlapped"],
-                sp_world_size = 4,
-                tp_world_size = 2,
+                sp_world_size = 2,
+                tp_world_size = 1,
                 max_total_token_num = 101000 * 2,
                 max_req_num = 1024,
                 max_seq_len = 201000
@@ -254,7 +252,7 @@ def get_scale_down_params():
                     num_decoding_stage_migration = 0
                 )
                 for (batch_size, input_len) in [
-                    (1024, 10), (256, 100), (64, 1000), (16, 10000), (4, 50000), (2, 100000), (1, 200000)
+                    (32, 10), (16, 100), (8, 1000), (4, 10000)
                 ]
                 for need_context_migration in [True]
             ]
@@ -266,7 +264,7 @@ def get_ae_figure2_params():
     """
     Get params for figure 2 in artifact evaluation
     """
-    tp_sizes = [1, 2, 4, 8]
+    tp_sizes = [1, 2, 4]
     batch_size_input_lens = [
         (16, 10),
         (16, 50),
@@ -275,7 +273,6 @@ def get_ae_figure2_params():
         (1, 100),
         (1, 1000),
         (1, 10000),
-        (1, 100000),
     ]
     test_params = [
         TestParamGroup(
@@ -284,15 +281,49 @@ def get_ae_figure2_params():
                 mode = ["_token_decode_attention_overlapped"],
                 sp_world_size = 1,
                 tp_world_size = tp_size,
-                max_total_token_num = 101000,
+                max_total_token_num = 20000,
                 max_req_num = 16,
-                max_seq_len = 101000
+                max_seq_len = 20000
             ),
             input_params = [
                 InputParam(
                     batch_size = batch_size,
                     input_len = input_len,
                     output_len = 16,
+                    num_sp_master = 1,
+                    need_context_migration = False,
+                    num_decoding_stage_migration = 0
+                )
+                for (batch_size, input_len) in batch_size_input_lens
+            ]
+        )
+        for tp_size in tp_sizes
+    ]
+    return test_params
+
+def get_my_params():
+    tp_sizes = [1, 4, 8]
+    batch_size_input_lens = [
+        (1280, 100),
+        (128, 1000),
+        (8, 16000),
+    ]
+    test_params = [
+        TestParamGroup(
+            worker_param=WorkerParam(
+                model_dir = os.environ.get("LWM_WEIGHT_PATH", "Env `LWM_WEIGHT_PATH` is not set!"),
+                mode = ["_token_decode_attention_overlapped"],
+                sp_world_size = 1,
+                tp_world_size = tp_size,
+                max_total_token_num = 130000,
+                max_req_num = 2100,
+                max_seq_len = 20000
+            ),
+            input_params = [
+                InputParam(
+                    batch_size = batch_size,
+                    input_len = input_len,
+                    output_len = 1,
                     num_sp_master = 1,
                     need_context_migration = False,
                     num_decoding_stage_migration = 0
@@ -348,6 +379,50 @@ def get_ae_figure3_params():
     ]
     return test_params
 
+def get_my_params1():
+    sp_and_tp_world_sizes = [
+        (1, 1),
+        (1, 2),
+        (1, 4),
+        (1, 8),
+        (2, 1),
+        (4, 1),
+        (8, 1),
+	]
+    batch_size_and_input_lens = [
+        (1, 100, [1, 1, 1, 1, 1, 1, 1]),
+        (1, 1000, [1, 1, 1, 1, 1, 1, 1]),
+        (1, 16000, [1, 1, 1, 1, 1, 1, 1]),
+        (1, 32000, [1, 1, 1, 1, 1, 1, 1]),
+        (1, 64000, [1, 1, 1, 1, 1, 1, 1]),
+        (1, 128000, [1, 1, 1, 1, 1, 1, 1]),
+	]
+    test_params = [
+        TestParamGroup(
+            worker_param=WorkerParam(
+                model_dir = os.environ.get("LWM_WEIGHT_PATH", "Env `LWM_WEIGHT_PATH` is not set!"),
+                mode = ["_token_decode_attention_overlapped"],
+                sp_world_size = sp_size,
+                tp_world_size = tp_size,
+                max_total_token_num = 140000//sp_size,
+                max_req_num = 10,
+                max_seq_len = 128001
+            ),
+            input_params = [
+                InputParam(
+                    batch_size = batch_size,
+                    input_len = input_len,
+                    output_len = 1,
+                    num_sp_master = num_sp_masters[sp_tp_index],
+                    need_context_migration = False,
+                    num_decoding_stage_migration = 0
+                )
+                for (batch_size, input_len, num_sp_masters) in batch_size_and_input_lens
+            ]
+        )
+        for sp_tp_index, (sp_size, tp_size) in enumerate(sp_and_tp_world_sizes)
+    ]
+    return test_params
 def get_ae_figure13_params():
     """
     Get params for figure 13 in artifact evaluation
@@ -438,6 +513,7 @@ if __name__ == "__main__":
 
         "longserve-ae-toy-example": lambda: run_longserve(get_ae_toy_example_params(), warmup_rounds=1, measure_rounds=1, skip_duplicated=False, store_into_db=False),
         "longserve-ae-figure2": lambda: run_longserve(get_ae_figure2_params()),
+        "my-exp": lambda: run_longserve(get_my_params1()),
         "longserve-ae-figure3": lambda: run_longserve(get_ae_figure3_params()),
         "longserve-ae-figure13": lambda: run_longserve(get_ae_figure13_params()),
         "longserve-ae-analytical-model-single-node": lambda: run_longserve(get_time_with_batch_size_params(False)),

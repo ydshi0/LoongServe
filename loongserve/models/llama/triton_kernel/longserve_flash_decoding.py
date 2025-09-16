@@ -8,6 +8,7 @@ def longserve_token_decode_attention_flash_decoding(q, req_to_token_indexs, b_re
 
     o_tensor = torch.empty_like(q, dtype=torch.float32) if out is None else out
     out_logexpsum = torch.empty([batch_size, q_head_num], dtype=torch.float32, device="cuda") if o_logexpsum is None else o_logexpsum
+    #print(f"[syd] decode_stage 1and2")
 
     longserve_flash_decode_stage1(q.view(calcu_shape1),
                                 cache_k,

@@ -16,6 +16,9 @@ from loongserve.models.llama.triton_kernel.copy_and_register_kv import pre_copy_
 from loongserve.models.llama.longserve_infer_struct import LongServeLlamaInferStateInfo, LongServeLlamaKVMigrationMeta
 from loongserve.models.llama.layer_weights.longserve_transformer_layer_weight import LongServeLlamaTransformerLayerWeight
 
+from loongserve.utils.log_utils import init_logger
+logger = init_logger(__name__)
+
 class LongServeTransformerLayerInfer:
     """
     """
@@ -387,6 +390,8 @@ class LongServeTransformerLayerInfer:
         q = None
         o = self._get_o(o, infer_state, layer_weight)
         if self.tp_world_size_ > 1:
+            # if self.total_rank_ == 1:
+            #     logger.info(f"prefill o,{o.size()}")
             dist.all_reduce(o, op=dist.ReduceOp.SUM, group=self.tp_group_, async_op=False)
         input_embding.add_(o.view(-1, self.embed_dim_))
         torch.cuda.synchronize()
@@ -401,6 +406,8 @@ class LongServeTransformerLayerInfer:
             layer_weight.down_proj,
         )
         if self.tp_world_size_ > 1:
+            # if self.total_rank_ == 1:
+            #     logger.info(f"prefill ffn_out,{ffn_out.size()}")
             dist.all_reduce(ffn_out, op=dist.ReduceOp.SUM, group=self.tp_group_, async_op=False)
         input_embdings.add_(ffn_out)
         torch.cuda.synchronize()
@@ -420,6 +427,8 @@ class LongServeTransformerLayerInfer:
 
             o = self._get_o(o, infer_state, layer_weight)
             if self.tp_world_size_ > 1:
+                # if self.total_rank_ == 1:
+                #     logger.info(f"decode o,{o.size()}")
                 dist.all_reduce(o, op=dist.ReduceOp.SUM, group=self.tp_group_, async_op=False)
             input_embding.add_(o.view(-1, self.embed_dim_))
         else:
@@ -436,6 +445,8 @@ class LongServeTransformerLayerInfer:
             layer_weight.down_proj,
         )
         if self.tp_world_size_ > 1:
+            # if self.total_rank_ == 1:
+            #     logger.info(f"decode ffn_out,{ffn_out.size()}")
             dist.all_reduce(ffn_out, op=dist.ReduceOp.SUM, group=self.tp_group_, async_op=False)
         mastering_input_embdings.add_(ffn_out)
         return
@@ -460,12 +471,15 @@ class LongServeTransformerLayerInfer:
         for (irecv_tensor, irecv_rank) in irecv_list:
             self.sp_comm_.nccl_recv(irecv_tensor, irecv_rank//self.tp_world_size_)
         for (isend_tensor, isend_rank) in isend_list:
+            # if self.total_rank_ == 1:
+            #         logger.info(f"sp prefill send,{isend_tensor.size()} rank,{isend_rank}")
             self.sp_comm_.nccl_send(isend_tensor, isend_rank//self.tp_world_size_)
         if sync_before_launch:
             self.sp_comm_.wait_for_default_stream()
         self.sp_comm_.nccl_group_end()
     
     def _selective_broadcast(self, tensor: torch.Tensor, src_rank: int, selective_peer_ranks: List[int]):
+        #print(f"[syd] broadcast,tensor,src_rank,selective_peer_ranks: {tensor.size(),src_rank,selective_peer_ranks}")
         self.sp_comm_.nccl_group_start()
         if src_rank == self.total_rank_:
             for peer_rank in selective_peer_ranks:
@@ -487,6 +501,8 @@ class LongServeTransformerLayerInfer:
         else:
             for tensor, gather_list in zip(tensor_list, gather_list_list):
                 assert gather_list is None
+                if self.total_rank_ == 1:
+                    logger.info(f"gather send,{tensor.size()}")
                 self.sp_comm_.nccl_send(tensor, dst_rank//self.tp_world_size_)
     
     def _selective_scatter(self, tensor_list: List[torch.Tensor], scatter_list_list: List[List[torch.Tensor]], src_rank: int, selective_peer_ranks: List[int]):
@@ -495,6 +511,8 @@ class LongServeTransformerLayerInfer:
             for tensor, scatter_list in zip(tensor_list, scatter_list_list):
                 for i, peer_rank in enumerate(selective_peer_ranks):
                     if peer_rank != self.total_rank_:
+                        if self.total_rank_ == 1:
+                            logger.info(f"scatter send,{scatter_list[i].size()}")
                         self.sp_comm_.nccl_send(scatter_list[i], peer_rank//self.tp_world_size_)
                     else:
                         tensor.copy_(scatter_list[i], non_blocking=True)

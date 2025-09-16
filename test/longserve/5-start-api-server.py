@@ -71,10 +71,10 @@ def api_server_starter_routine(
     if args.backend == "vllm":
         assert args.sp == 1, "Sequence parallelism is not supported in VLLM."
         max_model_len = get_vllm_max_params(args)
+        max_model_len = max_model_len // 5
         # NOTE Here we do not set CUDA_VISIBLE_DEVICES since ray will set it automatically
         script = f"""
-cd /mnt/petrelfs/zhaoyihao/intlsy/research;
-. vllm/start-env.fish;
+
 python -u -m vllm.entrypoints.api_server \\
     --host 0.0.0.0 --port {port} \\
     --engine-use-ray --disable-log-requests \\
@@ -121,10 +121,10 @@ python -u -m lightllm.server.api_server \\
     elif args.backend == "longserve" or args.backend == "longserve-fixsp":
         assert args.pp == 1, "Pipeline parallelism is not supported in LongServe."
         max_total_token_num, running_max_req_size, max_num_ooe = get_lightllm_params(args)
+        max_total_token_num = max_total_token_num // 5
         max_req_len = min(max_total_token_num * args.sp, 500000)
         script = f"""
 export CUDA_VISIBLE_DEVICES={gpu_ids};
-cd /mnt/petrelfs/zhaoyihao/intlsy/research/LongServe;
 python -u -m loongserve.longserve_server.api_server \\
     --host 0.0.0.0 --port {port} \\
     --model_dir {args.model} --tokenizer_mode auto \\
@@ -136,12 +136,12 @@ python -u -m loongserve.longserve_server.api_server \\
     --max_mig_len 10000 \\
     --avg_decoding_time {22 if args.tp*args.sp <= 8 else 25} \\
     --nccl_port {28768+worker_index} \\
-    --log_stats_interval 5 \\
+    --log_stats_interval 600 \\
     --max_prefill_time 5000 \\
     --local_world_size {min(gpus_per_worker, 8)} \\
     --max_wait_tokens 10 \\
     --min_comp_bound_decoding_batch_size 128 \\
-    --profiler_file_path /mnt/petrelfs/zhaoyihao/intlsy/research/exp-results/{args.ae_id}/analytical-model.csv \\
+    --profiler_file_path /workspace/result/analytical-model.csv \\
     --max_num_ooe {max_num_ooe} {"--use_fixed_sp" if args.backend == "longserve-fixsp" else ""} \\
     {f"--disable_scale_up" if args.disable_scale_up else ""} \\
     {f"--with_log_trace {args.with_log_trace}" if args.with_log_trace else ""}
@@ -257,7 +257,7 @@ def proxy_routine(
 def main(args: argparse.Namespace):
     print(args)
     gpus_per_worker = args.tp * args.pp * args.sp
-    assert os.getenv("CUDA_VISIBLE_DEVICES", "0,1,2,3,4,5,6,7") == "0,1,2,3,4,5,6,7", "We highly recommend you to run the servers on a exclusive node"
+    #assert os.getenv("CUDA_VISIBLE_DEVICES", "0,1,2,3,4,5,6,7") == "0,1,2,3,4,5,6,7", "We highly recommend you to run the servers on a exclusive node"
     proxy_port = BACKEND_TO_PORTS[args.backend]
     
     if args.dp == 1:

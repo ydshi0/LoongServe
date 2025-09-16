@@ -5,6 +5,9 @@ from loongserve.models.llama.layer_weights.longserve_pre_and_post_layer_weight i
 from loongserve.models.llama.longserve_infer_struct import LongServeLlamaInferStateInfo
 from loongserve.utils.infer_utils import mark_cost_time
 
+from loongserve.utils.log_utils import init_logger
+logger = init_logger(__name__)
+
 class LongServeLlamaPreLayerInfer:
     """
     """
@@ -39,6 +42,8 @@ class LongServeLlamaPreLayerInfer:
         input_embdings = torch.embedding(layer_weight.wte_weight_, tmp_input_ids, padding_idx=-1)
         input_embdings[input_mask] = 0.0
         if self.tp_world_size_ > 1:
+            # if self.total_rank_ == 1:
+            #     logger.info(f"prefill input_embdings,{input_embdings.size()}")
             dist.all_reduce(input_embdings, op=dist.ReduceOp.SUM, group=self.tp_group_, async_op=False)
         return input_embdings
 
@@ -49,5 +54,7 @@ class LongServeLlamaPreLayerInfer:
         input_embdings = torch.embedding(layer_weight.wte_weight_, tmp_input_ids, padding_idx=-1)
         input_embdings[input_mask] = 0.0
         if self.tp_world_size_ > 1:
+            # if self.total_rank_ == 1:
+            #     logger.info(f"decode input_embdings,{input_embdings.size()}")
             dist.all_reduce(input_embdings, op=dist.ReduceOp.SUM, group=self.tp_group_, async_op=False)
         return input_embdings

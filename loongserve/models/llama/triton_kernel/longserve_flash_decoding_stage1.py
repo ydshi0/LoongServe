@@ -76,6 +76,8 @@ def _fwd_kernel_flash_decode_stage1(
 
 
 def longserve_flash_decode_stage1(q, k, v, Req_to_tokens, B_req_idx, B_Seqlen, max_len_in_batch, mid_out, mid_out_logsumexp, block_seq):
+
+    #print(f"[syd] decode_stage1:")
     longserve_cuda_kernels.flash_decoding_stage1(
         mid_out,
         mid_out_logsumexp,

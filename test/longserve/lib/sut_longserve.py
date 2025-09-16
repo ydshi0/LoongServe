@@ -265,6 +265,7 @@ class LongServeSUT(SystemUnderTest):
             tp_rank_id = total_rank_id % self.tp_world_size
 
             output_kvargs = ray.get(worker_rets[total_rank_id])
+            #  得到结果了
             prefill_time_usages.append(output_kvargs["time_cost"])
             global_to_local_req_idx_table[total_rank_id] = output_kvargs["b_req_idx"].clone()
 
@@ -333,6 +334,7 @@ class LongServeSUT(SystemUnderTest):
                     break
 
         # Multi-master decoding phase
+        # prefill，decode应该是分开做的，他直接重新准备输入数据了，重启启动了
         first_token_global_idx = b_seq_len - 1
         max_mini_batch_size = math.ceil(batch_size / num_sp_master)
         mini_batch_range_list = []

@@ -1,0 +1,81 @@
+[36m(RouterManager pid=26574)[0m Starting the router on node a2
+[36m(RouterManager pid=26574)[0m INFO 06-05 14:06:02 [manager.py:64] use_fixed_sp is True, use fixed sequence parallelism
+[36m(RouterManager pid=26574)[0m start initializing Profiler, file: /workspace/result/analytical-model.csv
+[36m(RouterManager pid=26574)[0m DEBUG 06-05 14:06:02 [profiler.py:30] {'sp_world_size': '1', 'tp_world_size': '4', 'batch_size': '1.0', 'A': '14.419239642399678', 'B': '0.06265667746198034', 'C': '-1.2024847871466848e-06'}
+[36m(RouterManager pid=26574)[0m Starting workers
+[36m(RouterManager pid=26574)[0m Scheduling all workers into one node
+[36m(RouterManager pid=26574)[0m Initializing models
+[36m(RouterManager pid=26574)[0m nccl_host='127.0.1.1'
+[36m(ModelRpcServer pid=26591)[0m [sp_rank = 0/1, tp_rank = 1/4, total_rank = 1/4] available devices: 1, current device: 0, device name = 2528f019d36fc0630d3d2c1bc87862ed06c745abd3602bdce8e2b047, gpu ids = [1], max_mig_len = 10000
+[36m(ModelRpcServer pid=26593)[0m [sp_rank = 0/1, tp_rank = 2/4, total_rank = 2/4] available devices: 1, current device: 0, device name = 2528f019d36fc0630d3d2c1bc87862ed06c745abd3602bdce8e2b047, gpu ids = [2], max_mig_len = 10000
+[36m(DeTokenizationManager pid=26588)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(ModelRpcServer pid=26590)[0m [sp_rank = 0/1, tp_rank = 0/4, total_rank = 0/4] available devices: 1, current device: 0, device name = 2528f019d36fc0630d3d2c1bc87862ed06c745abd3602bdce8e2b047, gpu ids = [0], max_mig_len = 10000
+[36m(ModelRpcServer pid=26592)[0m [sp_rank = 0/1, tp_rank = 3/4, total_rank = 3/4] available devices: 1, current device: 0, device name = 2528f019d36fc0630d3d2c1bc87862ed06c745abd3602bdce8e2b047, gpu ids = [3], max_mig_len = 10000
+[36m(DeTokenizationManager pid=26584)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=26586)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=26585)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=26587)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=26580)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=26581)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=26583)[0m INFO 06-05 14:06:05 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=26588)[0m Detokenization manager 5 init ok (on node a2)
+[36m(DeTokenizationManager pid=26584)[0m Detokenization manager 2 init ok (on node a2)
+[36m(DeTokenizationManager pid=26586)[0m Detokenization manager 4 init ok (on node a2)
+[36m(DeTokenizationManager pid=26585)[0m Detokenization manager 6 init ok (on node a2)
+[36m(DeTokenizationManager pid=26587)[0m Detokenization manager 7 init ok (on node a2)
+[36m(DeTokenizationManager pid=26580)[0m Detokenization manager 0 init ok (on node a2)
+[36m(DeTokenizationManager pid=26581)[0m Detokenization manager 1 init ok (on node a2)
+[36m(DeTokenizationManager pid=26583)[0m Detokenization manager 3 init ok (on node a2)
+[36m(ModelRpcServer pid=26591)[0m [(0, 1)] Number of k/v cache slots: 100000
+[36m(ModelRpcServer pid=26591)[0m [(0, 1)] Number of request slots: 1032
+[36m(ModelRpcServer pid=26592)[0m [(0, 3)] Number of k/v cache slots: 100000
+[36m(ModelRpcServer pid=26592)[0m [(0, 3)] Number of request slots: 1032
+[36m(ModelRpcServer pid=26590)[0m [(0, 0)] Number of k/v cache slots: 100000
+[36m(ModelRpcServer pid=26590)[0m [(0, 0)] Number of request slots: 1032
+HTTP server manager init ok
+INFO 06-05 14:06:13 [api_server.py:437] Server started at [92m0.0.0.0:8700[1m
+[36m(RouterManager pid=26574)[0m Models are ready
+[36m(ModelRpcServer pid=26593)[0m [(0, 2)] Number of k/v cache slots: 100000
+[36m(ModelRpcServer pid=26593)[0m [(0, 2)] Number of request slots: 1032
+[36m(TokenizationManager pid=26594)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26595)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26596)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26597)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26598)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26600)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26602)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26603)[0m INFO 06-05 14:06:16 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(TokenizationManager pid=26594)[0m Tokenization manager 0 init ok (on node a2)
+[36m(TokenizationManager pid=26595)[0m Tokenization manager 1 init ok (on node a2)
+[36m(TokenizationManager pid=26596)[0m Tokenization manager 2 init ok (on node a2)
+[36m(TokenizationManager pid=26597)[0m Tokenization manager 3 init ok (on node a2)
+[36m(TokenizationManager pid=26598)[0m Tokenization manager 4 init ok (on node a2)
+[36m(TokenizationManager pid=26600)[0m Tokenization manager 6 init ok (on node a2)
+[36m(TokenizationManager pid=26602)[0m Tokenization manager 7 init ok (on node a2)
+[36m(TokenizationManager pid=26603)[0m Tokenization manager 5 init ok (on node a2)
+Namespace(backend='longserve-fixsp', model='/shared_LLM_model/meta-llama/Meta-Llama-3.1-8B-Instruct', tp=4, pp=1, dp=1, sp=1, dataset='sharegpt', with_log_trace=None, ae_id='intlsy', disable_scale_up=False)
+Worker starting with port=8700
+Starting server with command 
+export CUDA_VISIBLE_DEVICES=0,1,2,3;
+
+python -u -m loongserve.longserve_server.api_server \
+    --host 0.0.0.0 --port 8700 \
+    --model_dir /shared_LLM_model/meta-llama/Meta-Llama-3.1-8B-Instruct --tokenizer_mode auto \
+    --max_total_token_num 100000 --running_max_req_size 1024 \
+    --tp_world_size 4 --sp_world_size 1 \
+    --max_req_input_len 99999 --max_req_total_len 100000 \
+    --mode _token_decode_attention_overlapped \
+    --batch_max_tokens 500000 \
+    --max_mig_len 10000 \
+    --avg_decoding_time 22 \
+    --nccl_port 28768 \
+    --log_stats_interval 600 \
+    --max_prefill_time 5000 \
+    --local_world_size 4 \
+    --max_wait_tokens 10 \
+    --min_comp_bound_decoding_batch_size 128 \
+    --profiler_file_path /workspace/result/analytical-model.csv \
+    --max_num_ooe 1 --use_fixed_sp \
+     \
+    
+

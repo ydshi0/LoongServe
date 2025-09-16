@@ -79,10 +79,14 @@ if __name__ == "__main__":
         writer.writeheader()
 
         for sp_world_size, tp_world_size in [
-            (sp_world_size, tp_world_size)
-            for tp_world_size in [1,2,4,8]
-            for sp_world_size in [1,2,3,4,5,6,7,8]
-            if sp_world_size*tp_world_size <= 8 or (tp_world_size == 2 if args.enable_multi_node else False)
+            (1, 1),
+            (2, 1), (1, 2),
+            (4, 1), (2, 2), (1, 4),
+            (8, 1), (4, 2), (2, 4), (1, 8),
+            (3, 1), (3, 2),
+            (5, 1),
+            (6, 1),
+            (7, 1),
         ]:
             print(f"---------------------------------------------------------------")
             print(f"Running for sp_world_size={sp_world_size}, tp_world_size={tp_world_size}")

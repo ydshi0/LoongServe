@@ -51,6 +51,8 @@ def _fwd_kernel_flash_decode_stage2(
 
 
 def longserve_flash_decode_stage2(mid_out: torch.Tensor, mid_out_logexpsum, B_Seqlen, O, out_logexpsum, block_seq):
+
+    #print(f"[syd] decode_stage2 mid_out: {mid_out.size()}")
     longserve_cuda_kernels.flash_decoding_stage2(
         O,
         out_logexpsum,

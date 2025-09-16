@@ -16,6 +16,10 @@ from lib_benchmark_serving.structs import TestRequest, Dataset, ReqResult, dump_
 import lib_benchmark_serving.backend_request_func as req_backed
 from lib_benchmark_serving.metrics import BenchmarkMetrics
 
+import torch
+
+import copy
+
 async def run_some_requests(
     backend: str,
     api_url: str,
@@ -49,13 +53,13 @@ async def run_some_requests(
         request_func = req_backed.ASYNC_REQUEST_FUNCS[backend]
         output = await request_func(api_url, request, first_token_generated_pbar, finished_pbar)
 
+        #print(f"output,{output}")
         if output is None:
             return
         outputs.append(output)
         nonlocal last_print_outputs_len
         nonlocal last_print_time
-        if len(outputs)-last_print_outputs_len > len(requests)*0.1 or \
-            time.time() - last_print_time > 60:
+        if len(outputs) == len(requests):
             last_print_outputs_len = len(outputs)
             last_print_time = time.time()
             part_metrics = BenchmarkMetrics.from_req_results(outputs)
@@ -94,7 +98,9 @@ def benchmark_serving(
     dataset: Dataset,
     req_timestamps: list[float],
     num_prompts: int,
-    request_rate: float
+    request_rate: float,
+    inputlen: int,
+    outputlen: int
 ) -> list[ReqResult]:
     """
     Perform online serving benchmark under the given num_prompts and request_rate
@@ -107,7 +113,48 @@ def benchmark_serving(
     if len(req_timestamps) < num_prompts:
         print(f"Error: req_timestamps only has {len(req_timestamps)} requests, but we are asked to process {num_prompts} prompts")
         sys.exit(1)
-    requests = dataset.data[:num_prompts]
+    #requests = dataset.data[:num_prompts]
+
+    from transformers import PreTrainedTokenizerFast
+    tokenizer = PreTrainedTokenizerFast.from_pretrained(
+        "/shared_LLM_model/meta-llama/Meta-Llama-3.1-8B-Instruct",
+        use_fast=True
+    )
+
+    requests = []
+    for index in range(num_prompts):
+        req = dataset.data[index]
+
+        input_ids = tokenizer(
+            req.prompt,
+            return_tensors="pt",
+            add_special_tokens=False,
+        ).input_ids[0]
+
+        # 如果长度大于 inputlen，截断
+        if len(input_ids) > inputlen:
+            truncated_ids = input_ids[:inputlen]  
+        # 如果长度小于 inputlen，随机填充
+        else:
+            padding_length = inputlen - len(input_ids)
+            random_padding_ids = torch.randint(low=0, high=tokenizer.vocab_size, size=(padding_length,))
+            truncated_ids = torch.cat([input_ids, random_padding_ids], dim=0)  # 拼接
+
+        truncated_prompt = tokenizer.decode(
+            truncated_ids,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=True  # 清理多余空格
+        )
+
+        new_req = copy.deepcopy(req)
+        new_req.prompt = truncated_prompt
+        new_req.prompt_len = inputlen
+        new_req.output_len = outputlen
+        # print(req)
+        # print(new_req)
+        requests.append(new_req)
+
+    # print(len(requests))
     timestamps = np.array(req_timestamps[:num_prompts])
 
     # Scale timestamps to [0, num_prompts/request_rate]
@@ -154,6 +201,8 @@ def main(args: argparse.Namespace):
         print("Using uniform distribution")
 
     num_prompts_and_request_rates = eval(args.num_prompts_req_rates)
+    inputlen = args.inputlen 
+    outputlen = args.outputlen
     for (num_prompts, request_rate) in num_prompts_and_request_rates:
         print(f"{bcolors.OKGREEN}==============================================={bcolors.ENDC}")
         print(f"{bcolors.OKGREEN}Running on {num_prompts=} {request_rate=}{bcolors.ENDC}")
@@ -163,22 +212,25 @@ def main(args: argparse.Namespace):
             dataset,
             req_timestamps,
             num_prompts,
-            request_rate
+            request_rate,
+            inputlen,
+            outputlen
         )
+        #print(result)
         metrics = BenchmarkMetrics.from_req_results(result)
         print(metrics)
-        if not args.dont_save:
-            exp_result_filename = f"{args.exp_result_prefix}-{num_prompts}-{request_rate}"
-            if args.uniform_distrib:
-                exp_result_filename += "-uniform"
-            exp_result_filename += ".exp"
+        # if not args.dont_save:
+        #     exp_result_filename = f"{args.exp_result_prefix}-{num_prompts}-{request_rate}"
+        #     if args.uniform_distrib:
+        #         exp_result_filename += "-uniform"
+        #     exp_result_filename += ".exp"
 
-            exp_result_dir = os.path.join(args.exp_result_root, args.exp_result_dir)
-            os.makedirs(exp_result_dir, exist_ok=True)
-            exp_result_path = os.path.join(exp_result_dir, exp_result_filename)
+        #     exp_result_dir = os.path.join(args.exp_result_root, args.exp_result_dir)
+        #     os.makedirs(exp_result_dir, exist_ok=True)
+        #     exp_result_path = os.path.join(exp_result_dir, exp_result_filename)
 
-            dump_req_result_list(result, exp_result_path)
-        time.sleep(5)
+        #     dump_req_result_list(result, exp_result_path)
+        # time.sleep(20)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -242,7 +294,16 @@ if __name__ == "__main__":
         action="store_true",
         help="Use uniform distribution instead of Poisson"
     )
-
+    parser.add_argument(
+        "--inputlen",
+        type=int,
+        default=512
+    )
+    parser.add_argument(
+        "--outputlen",
+        type=int,
+        default=10
+    )
     args = parser.parse_args()
     if args.exp_result_dir == None:
         args.exp_result_dir = os.path.basename(args.dataset[:args.dataset.rindex('.')])

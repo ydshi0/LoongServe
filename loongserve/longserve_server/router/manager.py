@@ -23,7 +23,7 @@ from .pause_strategy import Fcfs, select_paused_reqs
 from .profiler import Profiler
 from loongserve.utils.log_utils import init_logger
 import rnccl
-
+import torch
 from ..detokenization.manager import DeTokenizationManager
 
 import longserve_c_scheduler
@@ -265,6 +265,7 @@ class RouterManager:
         return
 
     async def loop_for_fwd(self,):
+        logger.info(f"loop loop loop {torch.cuda.is_available()}")
         last_log_time = time.time()
         while True:
             await self.step()

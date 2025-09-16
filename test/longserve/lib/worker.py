@@ -33,7 +33,7 @@ class LongServeWorker:
         # Related issue:
         # https://discuss.pytorch.org/t/cuda-allocation-lifetime-for-inputs-to-distributed-all-reduce/191573
         os.environ["TORCH_NCCL_AVOID_RECORD_STREAMS"] = "1"
-        os.environ["NCCL_SOCKET_IFNAME"] = "ib0,ib1,ib2,ib3"
+        os.environ["NCCL_SOCKET_IFNAME"] = "ens5f0"
         
         # os.environ["NCCL_MAX_NCHANNELS"] = "4"
         

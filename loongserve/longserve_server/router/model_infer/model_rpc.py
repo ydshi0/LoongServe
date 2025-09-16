@@ -60,7 +60,7 @@ class ModelRpcServer: #(rpyc.Service):
         import os
         os.environ["NCCL_SOCKET_NTHREADS"] = "4"
         os.environ["NCCL_NSOCKS_PERTHREAD"] = "4"
-        os.environ["NCCL_SOCKET_IFNAME"] = "ib0,ib1,ib2,ib3"
+        os.environ["NCCL_SOCKET_IFNAME"] = "ens5f0"
         # # debug
         # os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 

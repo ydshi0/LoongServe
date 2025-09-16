@@ -23,6 +23,7 @@ class LongServeMemoryManager:
         self._init_buffers(size, dtype, head_num, head_dim, layer_num, num_idle_slots)
     
     def _init_buffers(self, size, dtype, head_num, head_dim, layer_num, num_idle_slots):
+        logger.info(f"$$$$$$$$,{layer_num},{size},{num_idle_slots},{head_num},{head_dim}")
         self.kv_buffer = torch.empty((layer_num, size+num_idle_slots, 2*head_num, head_dim), dtype=dtype, device="cuda")
     
     def _free_buffers(self):

@@ -16,9 +16,9 @@ ae_id = args.ae_id
 fig_id = args.fig
 
 model_dir = os.environ.get("LWM_WEIGHT_PATH", "Env `LWM_WEIGHT_PATH` is not set!")
-db_dir = f"/mnt/petrelfs/zhaoyihao/intlsy/research/exp-results/{ae_id}/loongserve-db-identical-req.sqlite"
-figs_dir = f"/mnt/petrelfs/zhaoyihao/intlsy/research/exp-results/{ae_id}"
-analytical_model_path = f"/mnt/petrelfs/zhaoyihao/intlsy/research/exp-results/{ae_id}/analytical-model.csv"
+db_dir = f"/workspace/result/loongserve-db-identical-req.sqlite"
+figs_dir = f"/workspace/result"
+analytical_model_path = f"/workspace/result/analytical-model.csv"
 
 record_manager = RecordManager(filename=db_dir)
 
@@ -89,7 +89,7 @@ def set_xinjin_style(ax: mpl_axes.Axes):
      
 def draw_fig_2():
     plt.rcParams.update({"font.size": 16})
-    tp_world_sizes = [1, 2, 4, 8]
+    tp_world_sizes = [1, 2, 4]
     batch_size_and_input_lens_short_requests = [
         (16, 10, "10"),
         (16, 50, "50"),
@@ -100,7 +100,6 @@ def draw_fig_2():
         (1, 100, "100"),
         (1, 1000, "1k"),
         (1, 10000, "10k"),
-        (1, 100000, "100k"),
     ]
     markers = ['o', 's', 'D', '^']
     output_len = 16

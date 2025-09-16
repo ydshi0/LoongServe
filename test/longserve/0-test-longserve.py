@@ -67,12 +67,12 @@ if __name__ == "__main__":
     test(
         model_dir = model_dir,
         mode = ["_token_decode_attention_overlapped"],
-        sp_world_size = 1,
-        tp_world_size = 1,
-        batch_size = 100,
-        input_len = 100,
+        sp_world_size = 2,
+        tp_world_size = 2,
+        batch_size = 10,
+        input_len = 2000,
         output_len = 16,
-        num_sp_master = 1,
+        num_sp_master = 2,
         need_context_migration = True,
         num_decoding_stage_migration = 10,
     )

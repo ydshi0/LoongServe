@@ -21,6 +21,7 @@ from loongserve.common.build_utils import repair_config
 from loongserve.common.basemodel.triton_kernel.copy_kv_index_to_req import copy_kv_index_to_req
 
 from loongserve.utils.log_utils import init_logger
+from datetime import datetime
 
 torch.backends.cudnn.enabled = True
 
@@ -314,10 +315,28 @@ class LongServeLlamaModel:
             multimodal_params=None,
             is_prefill=True
         ):
+        # with torch.profiler.profile(
+        #     activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+        #     on_trace_ready=torch.profiler.tensorboard_trace_handler('/workspace/result/profiler'),
+        #     record_shapes=True,
+        #     with_stack=True,
+        #     profile_memory=True,
+        # ) as prof:
+        
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+        start_event.record()
+
         if is_prefill:
             res = self._prefill(batch_size, total_token_num, max_token_num, max_len_in_batch, input_ids, b_req_idx, b_start_loc, b_seq_len, first_token_global_idx, logical_sp_peer_ranks, logical_sp_rank, need_context_migration, kv_cache_index_begin, kv_cache_index_end, multimodal_params)
         else:
             res = self._decode(batch_size, total_token_num, max_len_in_batch, input_ids, b_req_idx, b_seq_len, first_token_global_idx, sp_master_rank, logical_sp_peer_ranks, logical_sp_rank, peer_sp_master_rank_list, peer_query_buffer_range_list, peer_batch_size, peer_max_len_in_batch, peer_b_req_idx, peer_b_seq_len, multimodal_params)
+
+        end_event.record()
+        torch.cuda.synchronize()
+        cost = start_event.elapsed_time(end_event)
+        logger.info(f"forward cost:{cost},batchsize:{batch_size}")
+
         return res
 
     
