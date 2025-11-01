@@ -1,0 +1,27 @@
+[36m(RouterManager pid=190702)[0m Starting the router on node a2
+[36m(RouterManager pid=190702)[0m INFO 11-01 07:02:20 [manager.py:67] use_fixed_sp is False, use elastic sequence parallelism
+Namespace(backend='longserve', model='/shared_LLM_model/meta-llama/Meta-Llama-3.1-8B-Instruct', tp=2, pp=1, dp=1, sp=4, dataset='sharegpt', with_log_trace=None, ae_id='intlsy', disable_scale_up=False)
+Worker starting with port=8400
+Starting server with command 
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7;
+python -u -m loongserve.longserve_server.api_server \
+    --host 0.0.0.0 --port 8400 \
+    --model_dir /shared_LLM_model/meta-llama/Meta-Llama-3.1-8B-Instruct --tokenizer_mode auto \
+    --max_total_token_num 42000 --running_max_req_size 1024 \
+    --tp_world_size 2 --sp_world_size 4 \
+    --max_req_input_len 167999 --max_req_total_len 168000 \
+    --mode _token_decode_attention_overlapped \
+    --batch_max_tokens 500000 \
+    --max_mig_len 10000 \
+    --avg_decoding_time 41 \
+    --nccl_port 28768 \
+    --log_stats_interval 600 \
+    --max_prefill_time 25000 \
+    --local_world_size 8 \
+    --max_wait_tokens 10 \
+    --min_comp_bound_decoding_batch_size 64 \
+    --profiler_file_path /workspace/result/analytical-model.csv \
+    --max_num_ooe 1  \
+     \
+    
+

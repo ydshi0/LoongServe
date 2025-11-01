@@ -1,0 +1,44 @@
+[36m(RouterManager pid=208034)[0m Starting the router on node a2
+[36m(RouterManager pid=208034)[0m INFO 11-01 07:09:30 [manager.py:67] use_fixed_sp is False, use elastic sequence parallelism
+[36m(RouterManager pid=208034)[0m start initializing Profiler, file: /host_home/LoongServe/exp_result/analytical-model.csv
+[36m(RouterManager pid=208034)[0m DEBUG 11-01 07:09:30 [profiler.py:31] {'sp_world_size': '1', 'tp_world_size': '2', 'batch_size': '1.0', 'A': '16.86362619041683', 'B': '0.07984949464370102', 'C': '2.508286321756259e-06'}
+[36m(RouterManager pid=208034)[0m DEBUG 11-01 07:09:30 [profiler.py:31] {'sp_world_size': '2', 'tp_world_size': '2', 'batch_size': '1.0', 'A': '21.778825461463946', 'B': '0.04646657083835285', 'C': '1.294495581963262e-06'}
+[36m(RouterManager pid=208034)[0m DEBUG 11-01 07:09:30 [profiler.py:31] {'sp_world_size': '4', 'tp_world_size': '2', 'batch_size': '1.0', 'A': '32.81975710690035', 'B': '0.06622888563264719', 'C': '3.4668779336222144e-07'}
+[36m(RouterManager pid=208034)[0m DEBUG 11-01 07:09:30 [profiler.py:31] {'sp_world_size': '3', 'tp_world_size': '2', 'batch_size': '1.0', 'A': '29.823015735817016', 'B': '0.04071136571736365', 'C': '7.730817223466913e-07'}
+[36m(RouterManager pid=208034)[0m Starting workers
+[36m(RouterManager pid=208034)[0m Scheduling all workers into one node
+[36m(RouterManager pid=208034)[0m Initializing models
+[36m(RouterManager pid=208034)[0m nccl_host='127.0.1.1'
+[36m(DeTokenizationManager pid=208303)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=208304)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=208307)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=208305)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=208306)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=208302)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=208358)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=208308)[0m INFO 11-01 07:09:34 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+Namespace(backend='longserve', model='/host_model/meta-llama/Meta-Llama-3.1-8B-Instruct', tp=2, pp=1, dp=1, sp=4, dataset='sharegpt', with_log_trace=None, ae_id='intlsy', disable_scale_up=False)
+Worker starting with port=8400
+Starting server with command 
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7;
+python -u -m loongserve.longserve_server.api_server \
+    --host 0.0.0.0 --port 8400 \
+    --model_dir /host_model/meta-llama/Meta-Llama-3.1-8B-Instruct --tokenizer_mode auto \
+    --max_total_token_num 42000 --running_max_req_size 1024 \
+    --tp_world_size 2 --sp_world_size 4 \
+    --max_req_input_len 167999 --max_req_total_len 168000 \
+    --mode _token_decode_attention_overlapped \
+    --batch_max_tokens 500000 \
+    --max_mig_len 10000 \
+    --avg_decoding_time 41 \
+    --nccl_port 28768 \
+    --log_stats_interval 600 \
+    --max_prefill_time 25000 \
+    --local_world_size 8 \
+    --max_wait_tokens 10 \
+    --min_comp_bound_decoding_batch_size 64 \
+    --profiler_file_path /host_home/LoongServe/exp_result/analytical-model.csv \
+    --max_num_ooe 1  \
+     \
+    
+

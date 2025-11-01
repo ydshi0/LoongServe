@@ -141,7 +141,7 @@ python -u -m loongserve.longserve_server.api_server \\
     --local_world_size {min(gpus_per_worker, 8)} \\
     --max_wait_tokens 10 \\
     --min_comp_bound_decoding_batch_size 64 \\
-    --profiler_file_path /workspace/result/analytical-model.csv \\
+    --profiler_file_path /host_home/LoongServe/exp_result/analytical-model.csv \\
     --max_num_ooe {max_num_ooe} {"--use_fixed_sp" if args.backend == "longserve-fixsp" else ""} \\
     {f"--disable_scale_up" if args.disable_scale_up else ""} \\
     {f"--with_log_trace {args.with_log_trace}" if args.with_log_trace else ""}
