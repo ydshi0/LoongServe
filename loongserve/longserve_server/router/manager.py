@@ -27,7 +27,7 @@ import torch
 from ..detokenization.manager import DeTokenizationManager
 
 import longserve_c_scheduler
-
+from loongserve.utils.log_event import log_event,find_and_modify
 os.environ["RAY_USAGE_STATS_ENABLED"] = "0"
 os.environ["RAY_DEDUP_LOGS"] = "0"
 import ray
@@ -353,32 +353,46 @@ class RouterManager:
         """
         事件处理循环
         """
-        is_idle = (len(self.running_batch_list) == 0)
+        is_idle = (len(self.running_batch_list) == 0) 
         if is_idle or self.has_wait_tokens >= self.max_wait_tokens:
+            # log_event("System is idle or have too much wait tokens", is_idle = is_idle, wait_tokens=self.has_wait_tokens,max_wait_tokens=self.max_wait_tokens)
             new_req_list = self.req_queue.generate_new_req_list(self.running_batch_list, self.sum_finished_req_output_len, self.num_finished_reqs, self.profiler)
+            if new_req_list != []:
+                new_req_id_list = [req.request_id for req in new_req_list]
+                log_event("generate_new_req_list", new_req_num = len(new_req_id_list), new_req=new_req_id_list)
             if len(new_req_list) > 0:
                 self.has_wait_tokens = 0
                 # prefill batch starts
+                log_event("Try to schedule new req with running batch", new_req_list = new_req_list, running_batch_list=self.running_batch_list)
                 self.running_batch_list = await self._schedule_new_req_list_with_decoding(new_req_list, self.running_batch_list)
                 return
-            elif is_idle:
+            elif is_idle:                
                 return
-
+        
         total_used_tokens_list = self._get_total_used_tokens_list(self.running_batch_list)
+        log_event("Continue to decode",
+                  running_batch_list=self.running_batch_list,
+                  total_used_tokens_list=total_used_tokens_list,
+                  )
         can_decode, self.running_batch_list, rets = await self._schedule_decode_batch_list(self.running_batch_list, total_used_tokens_list, True)
+            
         if can_decode:
+            log_event("Decode is done, show batch info",batch_info=self.running_batch_list)
             await self._post_forward_batch(self.running_batch_list, rets)
             self.running_batch_list = self._filter_running_batch(self.running_batch_list)
+            log_event("Update running batch after post process",batch_info=self.running_batch_list)
             # decoding batch finishes
             self.has_wait_tokens += 1
             return
         else:
             print(f"execute offloading, total_used_tokens_list: {total_used_tokens_list}, pause_req_used_tokens_list: {self.req_queue.pause_req_used_tokens_list}, max_total_token_num: {self.max_total_token_num}")
             # pause strategy
+
             paused_req_batches = select_paused_reqs(self.running_batch_list, self.pause_strategy, self.req_queue, self.max_total_token_num) # FIXME
             for req, batch in paused_req_batches:
                 await self._pause_reqs(batch, [req])
             self.running_batch_list = self._filter_running_batch(self.running_batch_list)
+            log_event("Can not decode new token,because instance have no enough token num,so need to pause some ",paused_req_batches=paused_req_batches, running_batch_info=self.running_batch_list)
             logger.debug(f"pasued req num: {len(self.req_queue.pause_req_dict)}")
             self.has_wait_tokens = 0
             return
@@ -390,6 +404,9 @@ class RouterManager:
         """
         ans = await asyncio.gather(*rets)
         handle_finish_req_rets = []
+
+        unfinished_req_ids_list = []
+        finished_req_ids_list = []
         if self.total_world_size != 1:
             start = 0
             for batch in running_batch_list:
@@ -401,6 +418,9 @@ class RouterManager:
                 
                 self._update_out_status_to_batch(batch, req_to_out_status_list)
                 unfinished_req_ids, finished_req_ids, sum_finished_req_output_len = batch.mark_and_get_finished_req_and_preupdate_status(self.eos_id)
+
+                unfinished_req_ids_list.append(unfinished_req_ids)
+                finished_req_ids_list.append(finished_req_ids)
                 
                 self.sum_finished_req_output_len += sum_finished_req_output_len
                 self.num_finished_reqs += len(finished_req_ids)
@@ -417,7 +437,10 @@ class RouterManager:
 
                 self._update_out_status_to_batch(batch, req_to_out_status_list)
                 unfinished_req_ids, finished_req_ids, sum_finished_req_output_len = batch.mark_and_get_finished_req_and_preupdate_status(self.eos_id)
-                
+
+                unfinished_req_ids_list.append(unfinished_req_ids)
+                finished_req_ids_list.append(finished_req_ids)
+
                 self.sum_finished_req_output_len += sum_finished_req_output_len
                 self.num_finished_reqs += len(finished_req_ids)
                 
@@ -429,6 +452,8 @@ class RouterManager:
         final_removed_instances = []
         for removed_instances in removed_instances_list:
             final_removed_instances += removed_instances
+
+        log_event("update req and instance status",unfinished_req_ids=unfinished_req_ids_list,finished_req_ids=finished_req_ids_list,removed_instances_list=removed_instances_list)
         return final_removed_instances
     
     async def _run_independent_batch_list(self, independent_batch_list: list[Batch], rets: list, is_prefill: bool, global_iteration_time: float, iteration_start_time: float):
@@ -534,12 +559,29 @@ class RouterManager:
         num_current_busy_instance = self.sp_world_size - num_idle_instances
         num_min_busy_instances = (np.sum(total_used_tokens_list) + self.max_total_token_num - 1) // self.max_total_token_num
         num_max_idle_instances = self.sp_world_size - num_min_busy_instances
-        if num_min_busy_instances < num_current_busy_instance and num_new_tokens <= num_max_idle_instances * self.max_total_token_num and not self.disable_scale_up:
-            running_batch_list, total_used_tokens_list, num_idle_instances, available_instances = await self._minimize_decoding_occupied_instances(running_batch_list, total_used_tokens_list, num_idle_instances, num_max_idle_instances, available_instances, num_new_tokens, prefill_len_square_sum)
         
+        log_event("get instance info", current_busy_instance = num_current_busy_instance, min_busy_instances = num_min_busy_instances, max_idle_instances =num_max_idle_instances )
+        if num_min_busy_instances < num_current_busy_instance and num_new_tokens <= num_max_idle_instances * self.max_total_token_num and not self.disable_scale_up: 
+            log_event("scale_down decode instance is needed, now minimize decoding occupied instances" )
+            running_batch_list, total_used_tokens_list, num_idle_instances, available_instances = await self._minimize_decoding_occupied_instances(running_batch_list, total_used_tokens_list, num_idle_instances, num_max_idle_instances, available_instances, num_new_tokens, prefill_len_square_sum)
+        else:
+            log_event("scale_down decode instance is not needed" )
+
+        log_event("scale down decode is done",
+                  running_batch_list=running_batch_list,
+                  total_used_tokens_list=total_used_tokens_list,
+                  num_idle_instances=num_idle_instances,
+                  available_instances=available_instances)
+        
+
         pending_decode_batch_list: List[Batch] = []
         num_needed_slots = num_new_tokens - num_idle_instances * self.max_total_token_num
+
         if num_needed_slots > 0:
+            log_event("Prefill need more instance, Pending decode is needed",
+                      num_new_tokens=num_new_tokens,
+                      num_needed_slots=num_needed_slots,
+                      running_batch_list=running_batch_list)
             
             decode_batch_token_tuple_list = [(batch, len(batch.occupied_instances) * self.max_total_token_num - batch.batch_used_tokens_list.sum()) for batch in running_batch_list]
             decode_batch_token_tuple_list.sort(key=lambda x: x[1])
@@ -550,11 +592,22 @@ class RouterManager:
                 num_needed_slots -= num_idle_token
                 available_instances += batch.occupied_instances
                 num_idle_instances += len(batch.occupied_instances)
+
+           
             running_batch_list = [batch for batch, _ in decode_batch_token_tuple_list]
-        
+            log_event("Pending decode is done",
+                      available_instances=available_instances,
+                      num_idle_instances=num_idle_instances,
+                      pending_decode_batch_list=pending_decode_batch_list,
+                      running_batch_list=running_batch_list)
+        else:
+            log_event("Prefill can be processed, need not more instance",
+                      num_new_tokens=num_new_tokens,
+                      num_needed_slots=num_needed_slots,)  
+            
         running_decode_batch_list = []
         for batch in running_batch_list:
-            num_idle_token = len(batch.occupied_instances) * self.max_total_token_num - batch.batch_used_tokens_list.sum()
+            num_idle_token = len(batch.occupied_instances) * self.max_total_token_num - batch.batch_used_tokens_list.sum() #当前batch剩余token
             
             cur_max_prefill_iter_time = self.profiler.predict(num_idle_instances, num_new_tokens, prefill_len_square_sum)
             nxt_max_prefill_iter_time = self.profiler.predict(num_idle_instances + len(batch.occupied_instances), num_new_tokens, prefill_len_square_sum)
@@ -562,18 +615,37 @@ class RouterManager:
             prefill_speedup = (cur_max_prefill_iter_time - nxt_max_prefill_iter_time) * avg_input_token_latency_factor
             avg_output_token_latency_factor = len(batch.reqs) / np.sum([len(req.output_ids) for req in batch.reqs])
             decode_slowdown = nxt_max_prefill_iter_time * len(batch.reqs) * avg_output_token_latency_factor
+            log_event("Caculate prefill and decode speed, if turn instance of decode batch to prefill ",
+                      batch=batch,
+                      prefill_speedup=prefill_speedup,
+                      decode_slowdown=decode_slowdown)
             
             if prefill_speedup < decode_slowdown:
                 running_decode_batch_list.append(batch)
+                log_event("Keep decode",running_decode_batch_list=running_decode_batch_list)
+                
             else:
                 pending_decode_batch_list.append(batch)
                 available_instances += batch.occupied_instances
                 num_idle_instances += len(batch.occupied_instances)
+                log_event("Turn decode to prefill",
+                          pending_decode_batch_list=pending_decode_batch_list,
+                          available_instances=available_instances,
+                          num_idle_instances=num_idle_instances,
+                        )
             
         can_decode, running_decode_batch_list, decode_rets = await self._schedule_decode_batch_list(running_decode_batch_list, total_used_tokens_list, False)
+        log_event("after schedule decode,",
+                  can_decode=can_decode,
+                  running_decode_batch_list=running_decode_batch_list,
+                  decode_rets=decode_rets)
+        if can_decode:
+            log_instance_mapping = {sp_rank: batch for batch in running_decode_batch_list for sp_rank in batch.occupied_instances}
+            log_event("after decode, instance info",log_instance_mapping=log_instance_mapping)
 
         if not can_decode:
             extra_idle_instances = []
+            log_event("Decode can not start, try to allocate more instance")
             while num_new_tokens <= (len(available_instances) - 1) * self.max_total_token_num and not can_decode:
                 extra_idle_instances.append(available_instances.pop())
                 can_decode, running_decode_batch_list, decode_rets = await self._schedule_decode_batch_list(running_decode_batch_list, total_used_tokens_list, False, extra_idle_instances)
@@ -583,11 +655,14 @@ class RouterManager:
                 pending_decode_batch_list += running_decode_batch_list
                 running_decode_batch_list = []
                 available_instances = list(range(self.sp_world_size))
+                log_event("Only Prefill start",available_instances=available_instances,total_used_tokens_list=total_used_tokens_list)
         
 
         prefill_batch_list, prefill_rets, global_iteration_time = self._schedule_new_req_list(new_req_list, available_instances, total_used_tokens_list)
+        log_event("Prefill is done", new_batch =prefill_batch_list, global_iteration_time=global_iteration_time)
 
         new_batch_list: List[Batch] = await self._dispatch_independ_batch_list(prefill_batch_list, prefill_rets, running_decode_batch_list, decode_rets, global_iteration_time)
+        log_event("After parallel decode and prefill",new_batch_list=new_batch_list)
 
         if len(pending_decode_batch_list) > 0:
             for new_batch in new_batch_list:
@@ -601,6 +676,7 @@ class RouterManager:
                         new_running_batch_list.append(batch)
                 
                 pending_decode_batch_list = new_running_batch_list
+            log_event("Merge Pending and new batch",pending_decode_batch_list=pending_decode_batch_list)
             return pending_decode_batch_list
         else:
             return new_batch_list
@@ -608,9 +684,10 @@ class RouterManager:
     def _get_migration_time(self, num_migrated_tokens: int):
         # TODO: support different model and hardware configs
         num_transferred_bytes = num_migrated_tokens * 32 * 2 * 32 * 128 * 2 # num_tokens * num_layers * (k+v) * num_heads * head_dim * fp16
-        transfer_rate = 400 * 1024 * 1024 * 1024 # 400GB/s
+        transfer_rate = 24 * 1024 * 1024 * 1024 # 400GB/s -> 24GB/s
         return num_transferred_bytes / (transfer_rate * self.tp_world_size) * 1000 # ms
     
+
     async def _minimize_decoding_occupied_instances(self, running_batch_list: List[Batch], total_used_tokens_list: np.array, num_idle_instances: int, num_max_idle_instances: int, available_instances: list[int], num_new_tokens: int, prefill_len_square_sum: int):
         """
             Migrate key-value caches to leave more idle instances for prefill if it is beneficial
@@ -620,6 +697,7 @@ class RouterManager:
         num_min_busy_instances = self.sp_world_size - num_max_idle_instances
         start = num_min_busy_instances - 1
         removed_batch_set = set()
+        log_event("Current Batch and Instance info", instance_batch_tuple_list=instance_batch_tuple_list)
         while num_idle_instances < num_max_idle_instances:
             src_sp_rank, _ = instance_batch_tuple_list.pop()
             src_batch = instance_batch_mapping[src_sp_rank]
@@ -631,19 +709,30 @@ class RouterManager:
                 
                 num_migrated_tokens = total_used_tokens_list[src_sp_rank]
                 migration_time = self._get_migration_time(num_migrated_tokens)
-                
+                log_event("Caculate benefit if migration occur", cur_prefill_time = cur_max_prefill_iter_time,nxt_prefill_time = nxt_max_prefill_iter_time, prefill_speedup = prefill_speedup, migration_time = migration_time)
                 if prefill_speedup < migration_time:
+                    log_event("Benefit is too low, cancel migration")
                     break
 
             while total_used_tokens_list[src_sp_rank] > 0:
                 dst_sp_rank, _ = instance_batch_tuple_list[start]
                 dst_batch = instance_batch_mapping[dst_sp_rank]
                 total_migration_len = min(total_used_tokens_list[src_sp_rank], self.max_total_token_num - total_used_tokens_list[dst_sp_rank])
+                log_event("total_migration_len info",
+                          total_migration_len=total_migration_len,
+                          max_total_token_num=self.max_total_token_num,
+                          src_used_tokens_list=total_used_tokens_list[src_sp_rank],
+                          dst_used_tokens_list=total_used_tokens_list[dst_sp_rank])
                 if total_migration_len == 0:
+                    log_event("total_migration_len is 0, skip this batch", src_sp_rank=src_sp_rank, dst_sp_rank=dst_sp_rank, total_used_tokens_in_src_rank=total_used_tokens_list[src_sp_rank])
                     start -= 1
                     continue
+                else:
+                    log_event("total_migration_len is not 0, migrate this batch", src_sp_rank=src_sp_rank, dst_sp_rank=dst_sp_rank, total_migration_len=total_migration_len, total_used_tokens_in_src_rank=total_used_tokens_list[src_sp_rank])
+
 
                 if src_batch.batch_id != dst_batch.batch_id:
+                    log_event("Merge src_batch and dst_batch, before merge", src_batch = src_batch,dst_batch=dst_batch,instance_batch_mapping = instance_batch_mapping)
                     await self._merge_batch(dst_batch, src_batch)
                     dst_batch.merge(src_batch)
 
@@ -653,14 +742,31 @@ class RouterManager:
                         instance_batch_mapping[sp_i] = dst_batch
 
                     src_batch = dst_batch
+                    log_event("Merge src_batch and dst_batch, after merge", src_batch = src_batch,dst_batch=dst_batch,removed_batch_set=removed_batch_set, instance_batch_mapping=instance_batch_mapping)
                 
+                log_event("Before update info",
+                          src_batch_use=src_batch.batch_used_tokens_list[src_sp_rank],
+                          dst_batch_use=dst_batch.batch_used_tokens_list[dst_sp_rank],
+                          src_sp_rank_use=total_used_tokens_list[src_sp_rank],
+                          dst_sp_rank_use=total_used_tokens_list[dst_sp_rank],
+                          )
                 src_batch.batch_used_tokens_list[src_sp_rank] -= total_migration_len
                 dst_batch.batch_used_tokens_list[dst_sp_rank] += total_migration_len
                 total_used_tokens_list[src_sp_rank] -= total_migration_len
                 total_used_tokens_list[dst_sp_rank] += total_migration_len
-
+                log_event("After update info",
+                          src_batch_use=src_batch.batch_used_tokens_list[src_sp_rank],
+                          dst_batch_use=dst_batch.batch_used_tokens_list[dst_sp_rank],
+                          src_sp_rank_use=total_used_tokens_list[src_sp_rank],
+                          dst_sp_rank_use=total_used_tokens_list[dst_sp_rank],
+                          )
+                
                 b_request_ids = []
                 b_migration_len = []
+
+                #temp log info
+                req_kv = [{"request_id": req.request_id, "kv_len": req.cur_kv_len_list[src_sp_rank]} for req in src_batch.reqs]
+                log_event("Migrate KV Cache info", kv_info=req_kv)
 
                 for req in src_batch.reqs:
                     if req.cur_kv_len_list[src_sp_rank] == 0:
@@ -668,16 +774,21 @@ class RouterManager:
                     b_request_ids.append(req.request_id)
 
                     migration_len = min(total_migration_len, req.cur_kv_len_list[src_sp_rank])
+                    if total_migration_len==0 and req.cur_kv_len_list[src_sp_rank]>0:
+                        log_event("Can not Migrate KV Cache, because dst is full", req_id=req.request_id)
                     b_migration_len.append(migration_len)
 
                     req.cur_kv_len_list[src_sp_rank] -= migration_len
                     req.cur_kv_len_list[dst_sp_rank] += migration_len
                     total_migration_len -= migration_len
-            
+
+                log_event("Migrate KV of req list", req_list=b_request_ids,migration_len = b_migration_len)
+
                 await self._migrate_batch(src_batch, b_request_ids, b_migration_len, src_sp_rank, dst_sp_rank)
             
             assert src_batch.batch_used_tokens_list[src_sp_rank] == 0
             await self._scale_down_batch(src_batch, [src_sp_rank])
+            log_event("Release instance", instance_rank = src_sp_rank)
             available_instances.append(src_sp_rank)
             num_idle_instances += 1
         
@@ -740,6 +851,7 @@ class RouterManager:
 
 
             new_batch = Batch(uuid.uuid4().hex, new_req_list[global_num_served_req - last_batch_size:global_num_served_req], self.sp_world_size, available_instances[global_num_used_instances - last_used_instances:global_num_used_instances])
+
             need_context_migration, migration_plan = self._get_batch_prefill_migration_plan(new_batch, total_used_tokens_list)
             new_batch_list.append(new_batch)
             rets += self._prefill_batch(
@@ -867,11 +979,13 @@ class RouterManager:
         num_extra_idle_instances = len(extra_idle_instances)
         total_idle_tokens += num_extra_idle_instances * self.max_total_token_num
         if total_idle_tokens < 0:
+            log_event("Can not run decode, because token num is not enough",total_idle_tokens=total_idle_tokens)
             return False, decode_batch_list, []
         
         # decoding batch starts
 
-        # merge cannot decode batches
+        # merge cannot decode batches and can decode batch, turn cannot decode batch to can decode batch
+        # merge can decode batch, turn mini decode batch to large decode batch
         if len(cannot_decode_batch_tuple_list) > 0:
             cannot_decode_batch_tuple_list.sort(key=lambda x: x[1])
             can_decode_batch_tuple_list.sort(key=lambda x: x[1])
@@ -893,16 +1007,19 @@ class RouterManager:
                     added_instances = extra_idle_instances[:num_used_extra_instances]
                     extra_idle_instances = extra_idle_instances[num_used_extra_instances:]
                     num_extra_idle_instances -= num_used_extra_instances
+                    log_event("Decode batch need more instance",batch=cannot_decode_batch,added_instances=added_instances)
                     await self._scale_up_batch(cannot_decode_batch, added_instances)
                     cannot_decode_idle_tokens += num_used_extra_instances * self.max_total_token_num
                     can_decode_batch_tuple_list.append((cannot_decode_batches, cannot_decode_idle_tokens))
             
             new_decode_batch_list = []
             for can_decode_batches, _ in can_decode_batch_tuple_list:
+                temp_batch = can_decode_batches
                 if len(can_decode_batches) > 1:
                     for batch in can_decode_batches[1:]:
                         await self._merge_batch(can_decode_batches[0], batch)
                         can_decode_batches[0].merge(batch)
+                log_event("Merge tiny batch into new decode batch",old_batch=temp_batch,new_batch=can_decode_batches[0])
                 new_decode_batch_list.append(can_decode_batches[0])
             decode_batch_list = new_decode_batch_list
                 
@@ -921,6 +1038,7 @@ class RouterManager:
 
             start = 0
             idx = 0
+
             while idx < len(batch.occupied_instances):
                 sp_rank = batch.occupied_instances[idx]
 
@@ -935,7 +1053,7 @@ class RouterManager:
                         num_left_instances += 1
                     if len(added_instances) > 0:
                         await self._scale_up_batch(batch, added_instances)
-                    
+                        log_event("Add extra instances for decode",batch=batch,added_instances=added_instances)
                     mini_batch_size = min(decode_need_tokens, left_tokens, max(decode_need_tokens // num_left_instances, self.min_comp_bound_decoding_batch_size))
                     if mini_batch_size > 0:
                         num_sp_master_ranks += 1
@@ -968,6 +1086,7 @@ class RouterManager:
                 num_sp_master_ranks=num_sp_master_ranks,
                 mini_batch_range_list=mini_batch_range_list, mini_batch_size_list=mini_batch_size_list
             )
+
         return True, decode_batch_list, rets
 
     async def _scale_up_batch(self, batch: Batch, added_instances: List[int]):
@@ -990,6 +1109,7 @@ class RouterManager:
         removed_instances = set(removed_instances)
         batch.occupied_instances = [sp_rank for sp_rank in batch.occupied_instances if sp_rank not in removed_instances]
         await asyncio.gather(*rets)
+        log_event("_scale_down_batch",batch=batch,removed_instances=removed_instances)
         return
 
     def _prefill_batch(self, batch:Batch, need_context_migration: bool=False, migration_plan: np.array=None):

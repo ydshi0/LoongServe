@@ -3,6 +3,7 @@ from typing import List, Tuple
 from ..io_struct import Batch, Req
 import numpy as np
 from loongserve.utils.log_utils import init_logger
+from loongserve.utils.log_event import log_event
 
 logger = init_logger(__name__)
 
@@ -41,4 +42,5 @@ class Profiler:
         assert sp_world_size <= self.sp_world_size
         
         A, B, C = self.predictor_parameters[sp_world_size]
+
         return A + B * req_input_sum + C * req_input_square_sum

@@ -271,21 +271,44 @@ async def chat_completions(
         return resp
 
     # Streaming case
+
+    #origin loongserve
+    # async def stream_results() -> AsyncGenerator[bytes, None]:
+    #     async for request_output, metadata, _ in results_generator:
+    #         delta_message = DeltaMessage(role="assistant", content=request_output)
+
+    #         stream_choice = ChatCompletionStreamResponseChoice(
+    #             index=0, delta=delta_message
+    #         )
+
+    #         stream_resp = ChatCompletionStreamResponse(
+    #             id=request_id,
+    #             created=created_time,
+    #             model=request.model,
+    #             choices=[stream_choice],
+    #         )
+    #         yield ("data: " + stream_resp.json(ensure_ascii=False) + f"\n\n").encode("utf-8")
+
+    # vllm client
     async def stream_results() -> AsyncGenerator[bytes, None]:
-        async for request_output, metadata, _ in results_generator:
-            delta_message = DeltaMessage(role="assistant", content=request_output)
+        try:
+            async for request_output, metadata, _ in results_generator:
+                delta_message = DeltaMessage(role="assistant", content=request_output)
 
-            stream_choice = ChatCompletionStreamResponseChoice(
-                index=0, delta=delta_message
-            )
+                stream_choice = ChatCompletionStreamResponseChoice(
+                    index=0, delta=delta_message
+                )
 
-            stream_resp = ChatCompletionStreamResponse(
-                id=request_id,
-                created=created_time,
-                model=request.model,
-                choices=[stream_choice],
-            )
-            yield ("data: " + stream_resp.json(ensure_ascii=False) + f"\n\n").encode("utf-8")
+                stream_resp = ChatCompletionStreamResponse(
+                    id=request_id,
+                    created=created_time,
+                    model=request.model,
+                    choices=[stream_choice],
+                )
+                chunk = stream_resp.model_dump_json(exclude_none=True)
+                yield f"data: {chunk}\n\n".encode("utf-8")
+        finally:
+            yield b"data: [DONE]\n\n"
 
     async def abort_request() -> None:
         await httpserver_manager.abort(request_id)

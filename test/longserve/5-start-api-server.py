@@ -134,13 +134,13 @@ python -u -m loongserve.longserve_server.api_server \\
     --mode _token_decode_attention_overlapped \\
     --batch_max_tokens 500000 \\
     --max_mig_len 10000 \\
-    --avg_decoding_time {22 if args.tp*args.sp <= 8 else 25} \\
+    --avg_decoding_time {41 if args.tp*args.sp <= 8 else 25} \\
     --nccl_port {28768+worker_index} \\
     --log_stats_interval 600 \\
-    --max_prefill_time 5000 \\
+    --max_prefill_time 25000 \\
     --local_world_size {min(gpus_per_worker, 8)} \\
     --max_wait_tokens 10 \\
-    --min_comp_bound_decoding_batch_size 128 \\
+    --min_comp_bound_decoding_batch_size 64 \\
     --profiler_file_path /workspace/result/analytical-model.csv \\
     --max_num_ooe {max_num_ooe} {"--use_fixed_sp" if args.backend == "longserve-fixsp" else ""} \\
     {f"--disable_scale_up" if args.disable_scale_up else ""} \\

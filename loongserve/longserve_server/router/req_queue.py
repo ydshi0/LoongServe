@@ -8,7 +8,8 @@ from .profiler import Profiler
 from loongserve.utils.infer_utils import calculate_time
 from loongserve.longserve_server.io_struct import Req
 from loongserve.longserve_server.io_struct import ReqRunStatus, FinishStatus
-
+from loongserve.utils.log_utils import init_logger
+logger = init_logger(__name__)
 class ReqQueue:
 
     def __init__(self, args) -> None:
@@ -54,10 +55,11 @@ class ReqQueue:
     def _can_add_new_req(self, req:Req, is_busy: bool):
         self.cache_len_list.append(req.get_tuple_tokens(is_busy, self.router_max_new_token_len)) # hard to analysis
         new_cache_len_list = sorted(self.cache_len_list, key=lambda x: -x[1])
+        logger.info(f'before pop:{self.cache_len_list}')
         self.cache_len_list.pop()
         
-        left_out_len_array = np.array([e[1] for e in new_cache_len_list])
-        has_run_len_array = np.array([e[0] for e in new_cache_len_list])
+        left_out_len_array = np.array([e[1] for e in new_cache_len_list])#还需要生成的
+        has_run_len_array = np.array([e[0] for e in new_cache_len_list])#已经生成的
         cum_run_len_array = np.cumsum(has_run_len_array)
         size_array = np.arange(1, len(new_cache_len_list) + 1, 1)
         
@@ -68,7 +70,7 @@ class ReqQueue:
         else:
             pause_reqs_used_tokens_num_delta = 0
             pause_reqs_num_delta = 0
-
+        logger.info(f'self.cache_len_list:{self.cache_len_list},left_out_len_array:{left_out_len_array}, has_run_len_array:{has_run_len_array},need_max_token_num:{need_max_token_num}')
         ok_token_num = need_max_token_num <= self.max_total_tokens * self.sp_world_size - (self.cache_pause_reqs_used_tokens_list.sum() - pause_reqs_used_tokens_num_delta)
         ok_req_num = len(new_cache_len_list) + (self.cache_pause_reqs_num - pause_reqs_num_delta) <= self.running_max_req_size
 
@@ -80,6 +82,7 @@ class ReqQueue:
     def generate_new_req_list(self, current_batch_list:List[Batch], sum_finished_req_output_len: float, num_finished_reqs: float, profiler: Profiler):
         if len(self.waiting_req_list) == 0:
             return []
+        logger.info(f'current_batch_list:{current_batch_list},sum_finished_req_output_len:{sum_finished_req_output_len},num_finished_reqs:{num_finished_reqs}')
 
         exist_req_num = sum((len(batch.reqs) for batch in current_batch_list))
         exist_req_num += len(self.pause_req_dict)
@@ -87,32 +90,33 @@ class ReqQueue:
         if req_is_full:
             return []
         
-        estimated_max_iterations = 10
-        avg_num_iterations = sum_finished_req_output_len / num_finished_reqs
-        inverted_preempted_decode_token_sum = 0
-        cur_all_used_tokens_list = self.recalcu_pause_req_used_tokens_list().copy()
+        estimated_max_iterations = 10 # batch中剩余的最大迭代次数
+        avg_num_iterations = sum_finished_req_output_len / num_finished_reqs    # 平均输出长度
+        inverted_preempted_decode_token_sum = 0 #batch中req长度倒数的和
+        cur_all_used_tokens_list = self.recalcu_pause_req_used_tokens_list().copy() #暂停的req所使用的kv token总数
         for batch in current_batch_list:
-            cur_all_used_tokens_list += batch.batch_used_tokens_list
+            cur_all_used_tokens_list += batch.batch_used_tokens_list    #暂停的req + 当前batch已经使用kv token
 
             for req in batch.reqs:
                 inverted_preempted_decode_token_sum += 1.0 / len(req.output_ids)
                 estimated_max_iterations = max(estimated_max_iterations, avg_num_iterations - len(req.output_ids), 0.1 * len(req.output_ids))
-        estimated_waiting_time = estimated_max_iterations * self.avg_decoding_time
+        estimated_waiting_time = estimated_max_iterations * self.avg_decoding_time #估算这个batch剩余的decode时间
         
-        num_used_tokens = cur_all_used_tokens_list.sum()
-        num_idle_slots = self.sp_world_size * self.max_total_tokens - num_used_tokens
-        min_num_used_instances = (num_used_tokens + self.max_total_tokens - 1) // self.max_total_tokens
-        max_num_idle_instances = self.sp_world_size - min_num_used_instances
-        num_isolated_idle_tokens = self.max_total_tokens * max_num_idle_instances
-        batch_max_tokens = min(self.batch_max_tokens, num_idle_slots)
+        num_used_tokens = cur_all_used_tokens_list.sum() #使用的总token
+        num_idle_slots = self.sp_world_size * self.max_total_tokens - num_used_tokens #空闲kv token数目
+        min_num_used_instances = (num_used_tokens + self.max_total_tokens - 1) // self.max_total_tokens #实例的最少数量
+        max_num_idle_instances = self.sp_world_size - min_num_used_instances #最大空闲实例数
+        num_isolated_idle_tokens = self.max_total_tokens * max_num_idle_instances #剩余的总token数
+        batch_max_tokens = min(self.batch_max_tokens, num_idle_slots) #batch_max_tokens应小于等于batch_max_tokens以及num_idle_slots
         
         available_instances = np.nonzero(cur_all_used_tokens_list == 0)[0].tolist()
+        logger.info(f'available_instances:{available_instances},cur_all_used_tokens_list:{cur_all_used_tokens_list}')
         num_idle_instances = len(available_instances)
 
         cur_token_ratio_list = cur_all_used_tokens_list / self.max_total_tokens
         is_busy = np.all(cur_token_ratio_list >= self.router_token_ratio)
         
-        self._init_cache_list(current_batch_list, is_busy)
+        self._init_cache_list(current_batch_list, is_busy) # 记录暂停与正在运行req的cache信息
         can_run_list = []
         new_waiting_req_list = []
         req_prefill_sum = 0
@@ -136,7 +140,7 @@ class ReqQueue:
             if req.finish_status.is_aborted() and req.req_status == ReqRunStatus.WAIT_IN_QUEUE: 
                 continue
 
-            req_first_router_need_tokens = req.get_first_router_need_tokens()
+            req_first_router_need_tokens = req.get_first_router_need_tokens() #这个req需要的token数
             new_req_prefill_sum = req_prefill_sum + req_first_router_need_tokens
 
             if self._can_add_new_req(req, is_busy)\
@@ -154,7 +158,7 @@ class ReqQueue:
                     satisfy_prefill_time_limit = cur_prefill_iteration_time <= self.max_prefill_time
 
                     if potential_slowdown <= estimated_waiting_time\
-                        and (len(can_run_list) == 0 or satisfy_prefill_time_limit):
+                        and (len(can_run_list) == 0 or satisfy_prefill_time_limit): #如果空闲实例来prefill能有收益
 
                         if not satisfy_prefill_time_limit:
                             need_break = True
@@ -174,10 +178,12 @@ class ReqQueue:
                             self.pause_req_dict.pop(req.request_id)
                         
                         continue
-                
+
                 self.cache_len_list += undecided_cache_len_list
                 can_add_new_req = self._can_add_new_req(req, is_busy)
-                self.cache_len_list = self.cache_len_list[:-len(undecided_cache_len_list)]
+
+                self.cache_len_list = self.cache_len_list[:-len(undecided_cache_len_list)] #疑问：这里会把cache_len_list清空
+
                 if can_append_undecided_req_list and can_add_new_req and new_req_prefill_sum + undecided_req_prefill_sum <= batch_max_tokens:
                     undecided_req_list.append(req)
                     undecided_req_prefill_sum += req_first_router_need_tokens

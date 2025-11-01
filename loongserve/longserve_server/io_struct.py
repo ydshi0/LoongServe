@@ -4,6 +4,7 @@ import asyncio
 import enum
 import numpy as np
 
+
 class ReqRunStatus(enum.Enum):
     WAIT_IN_QUEUE = 0
     RUNNING = 1
@@ -93,9 +94,13 @@ class Req:
                         return True
         return False
 
+    # def __repr__(self):
+    #     return (f"(request_id(n={self.request_id}, "
+    #             f"prompt_ids={self.prompt_ids}, "
+    #             f"seq_len={self.input_len + len(self.output_ids)}, "
+    #             f"cur_kv_len_list={self.cur_kv_len_list}) ")
     def __repr__(self):
         return (f"(request_id(n={self.request_id}, "
-                f"prompt_ids={self.prompt_ids}, "
                 f"seq_len={self.input_len + len(self.output_ids)}, "
                 f"cur_kv_len_list={self.cur_kv_len_list}) ")
     
@@ -201,8 +206,17 @@ class Batch:
                 self.batch_used_tokens_list -= req.get_used_tokens_list()
             else:
                 unfinished_req_ids.append(req.request_id)
-    
+        
         return unfinished_req_ids, finished_req_ids, sum_finished_req_output_len
+    
+    def get_batch_info(self):
+        info = {}
+        info["batch_id"] = self.batch_id
+        info["reqs"] = self.id_to_reqs
+        info["sp_world_size"] = self.sp_world_size
+        info["occupied_instances"] = self.occupied_instances
+        return info
+
     
     def filter_out_finished_req(self, unfinished_req_ids, finished_req_ids):
         # update batch
