@@ -1,0 +1,45 @@
+Namespace(backend='longserve', host='localhost', port=None, dataset='/host_home/dataset/vllm/sharegpt/sharegpt.ds', num_prompts_req_rates='[(100, 20)]', dont_save=False, exp_result_root='/host_home/Loongserve/exp_result', exp_result_dir='sharegpt', exp_result_prefix='longserve', seed=0, uniform_distrib=False, inputlen=500, outputlen=1)
+Loaded dataset sharegpt (71248 requests)
+Using Poisson distribution
+[92m===============================================[0m
+[92mRunning on num_prompts=100 request_rate=20[0m
+
+
+
+longserve, sharegpt, (100, 20)
+TFT Gap: 0
+FIN Gap: 0
+{
+	num_requests: 100
+	test_duration_s: 5.437606499530375
+	request_throughput: 18.39044440024055
+	avg_inputlen: 500.0
+	avg_outputlen: 1.0
+	avg_per_token_latency_ms: 0.6025453799677466
+	avg_input_token_latency_ms: 0.6037426968291402
+	avg_output_token_latency_ms: 0.0
+	avg_latency: 301.87523536384106
+	TTFT: 301.8713484145701
+	TTFT_median: 273.7342710606754
+	TTFT_p99: 631.0262799821799
+	TPOT: 0.0
+	TPOT_median: 0.0
+	TPOT_p99: 0.0
+}
+{
+	num_requests: 100
+	test_duration_s: 5.437606499530375
+	request_throughput: 18.39044440024055
+	avg_inputlen: 500.0
+	avg_outputlen: 1.0
+	avg_per_token_latency_ms: 0.6025453799677466
+	avg_input_token_latency_ms: 0.6037426968291402
+	avg_output_token_latency_ms: 0.0
+	avg_latency: 301.87523536384106
+	TTFT: 301.8713484145701
+	TTFT_median: 273.7342710606754
+	TTFT_p99: 631.0262799821799
+	TPOT: 0.0
+	TPOT_median: 0.0
+	TPOT_p99: 0.0
+}

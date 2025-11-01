@@ -1,0 +1,15 @@
+Namespace(backend='longserve-fixsp', host='localhost', port=None, dataset='/host_home/dataset/vllm/sharegpt/sharegpt.ds', num_prompts_req_rates='[(10, 20)]', dont_save=False, exp_result_root='/host_home/Loongserve/exp_result', exp_result_dir='sharegpt', exp_result_prefix='longserve-fixsp', seed=0, uniform_distrib=False, inputlen=500, outputlen=1)
+Loaded dataset sharegpt (71248 requests)
+Using Poisson distribution
+[92m===============================================[0m
+[92mRunning on num_prompts=10 request_rate=20[0m
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]
+Warning: Exception encountered while sending request to the server: Cannot connect to host localhost:8700 ssl:default [Connect call failed ('127.0.0.1', 8700)]

@@ -42,8 +42,8 @@ def get_ae_toy_example_params() :
         worker_param = WorkerParam(
             model_dir = os.environ.get("LWM_WEIGHT_PATH", "Env `LWM_WEIGHT_PATH` is not set!"),
             mode = ["_token_decode_attention_overlapped"],
-            sp_world_size = 2,
-            tp_world_size = 1,
+            sp_world_size = 4,
+            tp_world_size = 2,
             max_total_token_num = 210000,
             max_req_num = 1024,
             max_seq_len = 210000
@@ -70,13 +70,15 @@ def get_sp_vs_tp_testing_params():
             mode = ["_token_decode_attention_overlapped"],
             sp_world_size = sp_world_size,
             tp_world_size = tp_world_size,
-            max_total_token_num = 101000 * tp_world_size,
+            max_total_token_num = 50500 * tp_world_size,
             max_req_num = 128,
             max_seq_len = 410000
         ) for (sp_world_size, tp_world_size) in
         [
             (1, 1),
             (2, 1), (1, 2),
+            (4, 1), (2, 2), (1, 4),
+            (8, 1), (4, 2), (2, 4), (1, 8)
         ]
     ]
     testing_params = [
@@ -91,7 +93,7 @@ def get_sp_vs_tp_testing_params():
                     need_context_migration = False,
                     num_decoding_stage_migration = 0
                 )
-                for input_len in [10, 100, 1000, 10000]
+                for input_len in [10, 100, 1000, 10000, 20000, 50000, 100000]
                 if not (input_len >= 200000 and worker_param.sp_world_size * worker_param.tp_world_size <= 2)
                 if not (input_len >= 400000 and worker_param.sp_world_size * worker_param.tp_world_size <= 4)
             ]
@@ -110,9 +112,9 @@ def get_time_with_batch_size_params(enable_multi_node: bool):
             mode = ["_token_decode_attention_overlapped"],
             sp_world_size = sp_world_size,
             tp_world_size = tp_world_size,
-            max_total_token_num = 10100 * tp_world_size,
+            max_total_token_num = 101000 * tp_world_size,
             max_req_num = 1024,
-            max_seq_len = 51000
+            max_seq_len = 100000
         ) for (sp_world_size, tp_world_size) in
         [
             (1, 1),
@@ -142,8 +144,8 @@ def get_time_with_batch_size_params(enable_multi_node: bool):
                     need_context_migration = False,
                     num_decoding_stage_migration = 0
                 )
-                for batch_size in [1, 2, 4, 8, 16]
-                for input_len in [10, 50, 100]
+                for batch_size in [1, 2, 4, 8, 16, 32, 48, 64]
+                for input_len in [100000]
                 if batch_size*(input_len+16*worker_param.sp_world_size) <= (worker_param.max_total_token_num-100)*worker_param.sp_world_size
                 if not (input_len >= 200000 and worker_param.sp_world_size*worker_param.tp_world_size <= 2)
                 if not (input_len >= 400000 and worker_param.sp_world_size*worker_param.tp_world_size <= 4)
@@ -183,7 +185,7 @@ def get_tp_benchmark_params():
                     need_context_migration = False,
                     num_decoding_stage_migration = 0
                 )
-                for input_len in [10, 100, 1000, 5000, 10000]
+                for input_len in [60000,100000]
                 for batch_size in [1, 2, 4, 8, 16, 32]
                 if batch_size*input_len <= worker_param.max_total_token_num
                 if not (input_len >= 200000 and worker_param.tp_world_size <= 2)
@@ -219,9 +221,9 @@ def get_scale_up_params():
                     num_decoding_stage_migration = 0
                 )
                 for (batch_size, input_len) in [
-                    (32, 10), (16, 100), (8, 1000), (4, 10000)
+                    (512, 10), (128, 100), (32, 1000), (8, 10000)
                 ]
-                for num_sp_master in [1, 2]
+                for num_sp_master in [1, 2, 4]
             ]
         )
     ]
@@ -252,7 +254,7 @@ def get_scale_down_params():
                     num_decoding_stage_migration = 0
                 )
                 for (batch_size, input_len) in [
-                    (32, 10), (16, 100), (8, 1000), (4, 10000)
+                    (512, 10), (128, 100), (32, 1000), (8, 10000)
                 ]
                 for need_context_migration in [True]
             ]
@@ -264,7 +266,7 @@ def get_ae_figure2_params():
     """
     Get params for figure 2 in artifact evaluation
     """
-    tp_sizes = [1, 2, 4]
+    tp_sizes = [1, 2, 4, 8]
     batch_size_input_lens = [
         (16, 10),
         (16, 50),
@@ -273,6 +275,7 @@ def get_ae_figure2_params():
         (1, 100),
         (1, 1000),
         (1, 10000),
+        (1, 50000),
     ]
     test_params = [
         TestParamGroup(

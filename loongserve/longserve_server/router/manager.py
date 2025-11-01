@@ -24,6 +24,7 @@ from .profiler import Profiler
 from loongserve.utils.log_utils import init_logger
 import rnccl
 import torch
+import time
 from ..detokenization.manager import DeTokenizationManager
 
 import longserve_c_scheduler
@@ -56,6 +57,7 @@ class RouterManager:
         self.max_mig_len = args.max_mig_len
         self.use_fixed_sp = args.use_fixed_sp
         self.disable_scale_up = args.disable_scale_up
+        self.iter_num = 0
         if self.disable_scale_up:
             logger.info("disable_scale_up is True, disable scale up")
             self._schedule_decode_batch_list = partial(RouterManager._schedule_decode_batch_list_without_scale_up, self)
@@ -268,7 +270,7 @@ class RouterManager:
         logger.info(f"loop loop loop {torch.cuda.is_available()}")
         last_log_time = time.time()
         while True:
-            await self.step()
+            await self._step()
             if len(self.running_batch_list) == 0:
                 await asyncio.sleep(0.005)  # 5 ms
             
@@ -353,13 +355,24 @@ class RouterManager:
         """
         事件处理循环
         """
+        if len(self.req_queue.waiting_req_list) is not 0:
+            self.iter_num += 1
+        if self.iter_num is not 0:
+            self.iter_num += 1
+            if len(self.req_queue.waiting_req_list) is not 0:
+                print(f"=== RouterManager iteration {self.iter_num} ===")
+                print(f"self.req_queue.waiting_req_list length: {len(self.req_queue.waiting_req_list)}")
         is_idle = (len(self.running_batch_list) == 0)
-        if is_idle or self.has_wait_tokens >= self.max_wait_tokens:
+        if is_idle or self.has_wait_tokens >= self.max_wait_tokens: ## has_wait_token: decode only batch counter
             new_req_list = self.req_queue.generate_new_req_list(self.running_batch_list, self.sum_finished_req_output_len, self.num_finished_reqs, self.profiler)
+            # if new_req_list is not None:
+            #     print(f"[Loongserve manager] new_req_list: {new_req_list}")
             if len(new_req_list) > 0:
                 self.has_wait_tokens = 0
                 # prefill batch starts
                 self.running_batch_list = await self._schedule_new_req_list_with_decoding(new_req_list, self.running_batch_list)
+                for batch in self.running_batch_list:
+                    print(f"[Loongserve manager] running batch id: {batch.batch_id}, req num: {len(batch.reqs)}, occupied instances: {batch.occupied_instances}, batch_used_tokens_sum: {batch.batch_used_tokens_list.sum()}")
                 return
             elif is_idle:
                 return
@@ -518,6 +531,7 @@ class RouterManager:
         """
             Schedule a macro iteration with requests in the prefill and decoding phase
         """
+        schedule_start = time.perf_counter()
         num_new_tokens = 0
         prefill_len_square_sum = 0
         avg_input_token_latency_factor = 0
@@ -529,16 +543,19 @@ class RouterManager:
 
         total_used_tokens_list: np.array = self._get_total_used_tokens_list(running_batch_list)
         available_instances = np.nonzero(total_used_tokens_list == 0)[0].tolist()
-        num_idle_instances = len(available_instances)
+        num_idle_instances = len(available_instances)## get free instances
 
-        num_current_busy_instance = self.sp_world_size - num_idle_instances
-        num_min_busy_instances = (np.sum(total_used_tokens_list) + self.max_total_token_num - 1) // self.max_total_token_num
-        num_max_idle_instances = self.sp_world_size - num_min_busy_instances
+        num_current_busy_instance = self.sp_world_size - num_idle_instances## busy instances
+
+        num_min_busy_instances = (np.sum(total_used_tokens_list) + self.max_total_token_num - 1) // self.max_total_token_num ## max_total_token_num minus 1 for up ceiling
+        num_max_idle_instances = self.sp_world_size - num_min_busy_instances ## most free instances can get
         if num_min_busy_instances < num_current_busy_instance and num_new_tokens <= num_max_idle_instances * self.max_total_token_num and not self.disable_scale_up:
             running_batch_list, total_used_tokens_list, num_idle_instances, available_instances = await self._minimize_decoding_occupied_instances(running_batch_list, total_used_tokens_list, num_idle_instances, num_max_idle_instances, available_instances, num_new_tokens, prefill_len_square_sum)
         
         pending_decode_batch_list: List[Batch] = []
-        num_needed_slots = num_new_tokens - num_idle_instances * self.max_total_token_num
+        num_needed_slots = num_new_tokens - num_idle_instances * self.max_total_token_num ## extra tokens cant served by free instances
+        ### sort running batch by their idle token num, and move batches with more idle tokens to pending decode batch list to free more instances for prefill
+        ### decode batch scale down and 
         if num_needed_slots > 0:
             
             decode_batch_token_tuple_list = [(batch, len(batch.occupied_instances) * self.max_total_token_num - batch.batch_used_tokens_list.sum()) for batch in running_batch_list]
@@ -551,7 +568,7 @@ class RouterManager:
                 available_instances += batch.occupied_instances
                 num_idle_instances += len(batch.occupied_instances)
             running_batch_list = [batch for batch, _ in decode_batch_token_tuple_list]
-        
+        ### compare the prefill speedup and decode slowdown to decide whether to move a running decode batch to pending decode batch list
         running_decode_batch_list = []
         for batch in running_batch_list:
             num_idle_token = len(batch.occupied_instances) * self.max_total_token_num - batch.batch_used_tokens_list.sum()
@@ -579,14 +596,22 @@ class RouterManager:
                 can_decode, running_decode_batch_list, decode_rets = await self._schedule_decode_batch_list(running_decode_batch_list, total_used_tokens_list, False, extra_idle_instances)
             
             if not can_decode:
-                print(f"\nprefill only start, len(new_req_list): {len(new_req_list)}, running decode batch: {len(running_decode_batch_list)}, batch size list: {[len(batch.reqs) for batch in running_decode_batch_list]}, pending decode batch: {len(pending_decode_batch_list)}, total_used_tokens_list: {total_used_tokens_list}\n")
+                print(f"\n [Loongserve manager] prefill only start, len(new_req_list): {len(new_req_list)}, running decode batch: {len(running_decode_batch_list)}, batch size list: {[len(batch.reqs) for batch in running_decode_batch_list]}, pending decode batch: {len(pending_decode_batch_list)}, total_used_tokens_list: {total_used_tokens_list}\n")
                 pending_decode_batch_list += running_decode_batch_list
                 running_decode_batch_list = []
                 available_instances = list(range(self.sp_world_size))
         
-
+        
         prefill_batch_list, prefill_rets, global_iteration_time = self._schedule_new_req_list(new_req_list, available_instances, total_used_tokens_list)
-
+        schedule_end = time.perf_counter()
+        print(f"[Loongserve manager] scheduling time: {(schedule_end - schedule_start) * 1000:.2f} ms")
+        print("[Loongserve manager] prefill and decoding batch scheduling results:")
+        for batch in running_decode_batch_list:
+            print(f"    running decode batch id: {batch.batch_id}, req num: {len(batch.reqs)}, occupied instances: {batch.occupied_instances}, batch_used_tokens_sum: {batch.batch_used_tokens_list.sum()}")
+        for batch in pending_decode_batch_list:
+            print(f"    pending decode batch id: {batch.batch_id}, req num: {len(batch.reqs)}, occupied instances: {batch.occupied_instances}, batch_used_tokens_sum: {batch.batch_used_tokens_list.sum()}")
+        for batch in prefill_batch_list:
+            print(f"    prefill batch id: {batch.batch_id}, req num: {len(batch.reqs)}, occupied instances: {batch.occupied_instances}, batch_used_tokens_sum: {batch.batch_used_tokens_list.sum()}")
         new_batch_list: List[Batch] = await self._dispatch_independ_batch_list(prefill_batch_list, prefill_rets, running_decode_batch_list, decode_rets, global_iteration_time)
 
         if len(pending_decode_batch_list) > 0:
@@ -608,9 +633,12 @@ class RouterManager:
     def _get_migration_time(self, num_migrated_tokens: int):
         # TODO: support different model and hardware configs
         num_transferred_bytes = num_migrated_tokens * 32 * 2 * 32 * 128 * 2 # num_tokens * num_layers * (k+v) * num_heads * head_dim * fp16
-        transfer_rate = 400 * 1024 * 1024 * 1024 # 400GB/s
+        ## transfer_rate = 400 * 1024 * 1024 * 1024 # 400GB/s
+        transfer_rate = 24 * 1024 * 1024 * 1024 # 30GB/s for a40
         return num_transferred_bytes / (transfer_rate * self.tp_world_size) * 1000 # ms
     
+
+    48989
     async def _minimize_decoding_occupied_instances(self, running_batch_list: List[Batch], total_used_tokens_list: np.array, num_idle_instances: int, num_max_idle_instances: int, available_instances: list[int], num_new_tokens: int, prefill_len_square_sum: int):
         """
             Migrate key-value caches to leave more idle instances for prefill if it is beneficial

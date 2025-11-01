@@ -335,7 +335,7 @@ class LongServeLlamaModel:
         end_event.record()
         torch.cuda.synchronize()
         cost = start_event.elapsed_time(end_event)
-        logger.info(f"forward cost:{cost},batchsize:{batch_size}")
+        # logger.info(f"forward cost:{cost},batchsize:{batch_size}")
 
         return res
 

@@ -1,0 +1,119 @@
+digraph G {
+    graph [rankdir=TB, clusterrank="local"];
+    subgraph cluster_G {
+
+        graph [style="filled,rounded", fillcolor="#80808018", label=""];
+        loongserve__longserve_server__router__manager [label="loongserve.longserve_server.router.manager", style="filled", fillcolor="#ffffffb2", fontcolor="#000000", group="0"];
+        subgraph cluster_loongserve__longserve_server__router__manager {
+
+            graph [style="filled,rounded", fillcolor="#80808018", label="loongserve.longserve_server.router.manager"];
+            loongserve__longserve_server__router__manager__RouterManager [label="RouterManager", style="filled", fillcolor="#ff3232b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__start_router_process [label="start_router_process", style="filled", fillcolor="#ff3232b2", fontcolor="#000000", group="0"];
+        }
+        subgraph cluster_loongserve__longserve_server__router__manager__RouterManager {
+
+            graph [style="filled,rounded", fillcolor="#80808018", label="loongserve.longserve_server.router.manager.RouterManager"];
+            loongserve__longserve_server__router__manager__RouterManager____init__ [label="__init__", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___can_decode_fixed_sp [label="_can_decode_fixed_sp", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___decode_batch [label="_decode_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___dispatch_independ_batch_list [label="_dispatch_independ_batch_list", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___filter_batch [label="_filter_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___filter_running_batch [label="_filter_running_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___get_batch_prefill_migration_plan [label="_get_batch_prefill_migration_plan", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___get_migration_time [label="_get_migration_time", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___get_total_used_tokens_list [label="_get_total_used_tokens_list", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___handle_finish_req [label="_handle_finish_req", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___merge_batch [label="_merge_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___migrate_batch [label="_migrate_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___minimize_decoding_occupied_instances [label="_minimize_decoding_occupied_instances", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___pause_reqs [label="_pause_reqs", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___post_forward_batch [label="_post_forward_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___prefill_batch [label="_prefill_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___print_all_reqs [label="_print_all_reqs", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___remove_batch [label="_remove_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___run_independent_batch_list [label="_run_independent_batch_list", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___scale_down_batch [label="_scale_down_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___scale_up_batch [label="_scale_up_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list [label="_schedule_decode_batch_list", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list_without_scale_up [label="_schedule_decode_batch_list_without_scale_up", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list [label="_schedule_new_req_list", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list_with_decoding [label="_schedule_new_req_list_with_decoding", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___send_to_detokenization_proc [label="_send_to_detokenization_proc", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___step [label="_step", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager___update_out_status_to_batch [label="_update_out_status_to_batch", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager__abort [label="abort", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager__add_req [label="add_req", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager__clean_up [label="clean_up", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager__loop_for_fwd [label="loop_for_fwd", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager__loop_for_netio_req [label="loop_for_netio_req", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager__to_detokenization_processes [label="to_detokenization_processes", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+            loongserve__longserve_server__router__manager__RouterManager__wait_to_model_ready [label="wait_to_model_ready", style="filled", fillcolor="#ff0000b2", fontcolor="#000000", group="0"];
+        }
+        subgraph cluster_loongserve__longserve_server__router__manager__RouterManager___decode_batch {
+
+            graph [style="filled,rounded", fillcolor="#80808018", label="loongserve.longserve_server.router.manager.RouterManager._decode_batch"];
+            loongserve__longserve_server__router__manager__RouterManager___decode_batch__decoding_batch_wrapper [label="decoding_batch_wrapper", style="filled", fillcolor="#cb0000b2", fontcolor="#ffffff", group="0"];
+        }
+        subgraph cluster_loongserve__longserve_server__router__manager__RouterManager___prefill_batch {
+
+            graph [style="filled,rounded", fillcolor="#80808018", label="loongserve.longserve_server.router.manager.RouterManager._prefill_batch"];
+            loongserve__longserve_server__router__manager__RouterManager___prefill_batch__prefill_batch_wrapper [label="prefill_batch_wrapper", style="filled", fillcolor="#cb0000b2", fontcolor="#ffffff", group="0"];
+        }
+    }
+        loongserve__longserve_server__router__manager__RouterManager____init__ -> loongserve__longserve_server__router__manager__RouterManager____init__ [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager____init__ -> loongserve__longserve_server__router__manager__RouterManager___step [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager____init__ -> loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list_without_scale_up [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager__abort -> loongserve__longserve_server__router__manager__RouterManager___filter_running_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager__loop_for_fwd -> loongserve__longserve_server__router__manager__RouterManager___filter_running_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager__loop_for_fwd -> loongserve__longserve_server__router__manager__RouterManager___get_total_used_tokens_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager__loop_for_fwd -> loongserve__longserve_server__router__manager__RouterManager___step [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___can_decode_fixed_sp -> loongserve__longserve_server__router__manager__RouterManager___get_total_used_tokens_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___step -> loongserve__longserve_server__router__manager__RouterManager___pause_reqs [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___step -> loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list_with_decoding [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___step -> loongserve__longserve_server__router__manager__RouterManager___filter_running_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___step -> loongserve__longserve_server__router__manager__RouterManager___post_forward_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___step -> loongserve__longserve_server__router__manager__RouterManager___get_total_used_tokens_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___post_forward_batch -> loongserve__longserve_server__router__manager__RouterManager___send_to_detokenization_proc [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___post_forward_batch -> loongserve__longserve_server__router__manager__RouterManager___update_out_status_to_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___post_forward_batch -> loongserve__longserve_server__router__manager__RouterManager___handle_finish_req [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___run_independent_batch_list -> loongserve__longserve_server__router__manager__RouterManager___filter_running_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___run_independent_batch_list -> loongserve__longserve_server__router__manager__RouterManager___post_forward_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___run_independent_batch_list -> loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___run_independent_batch_list -> loongserve__longserve_server__router__manager__RouterManager___scale_down_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___run_independent_batch_list -> loongserve__longserve_server__router__manager__RouterManager___get_total_used_tokens_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___dispatch_independ_batch_list -> loongserve__longserve_server__router__manager__RouterManager___run_independent_batch_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list_with_decoding -> loongserve__longserve_server__router__manager__RouterManager___dispatch_independ_batch_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list_with_decoding -> loongserve__longserve_server__router__manager__RouterManager___minimize_decoding_occupied_instances [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list_with_decoding -> loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list_with_decoding -> loongserve__longserve_server__router__manager__RouterManager___merge_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list_with_decoding -> loongserve__longserve_server__router__manager__RouterManager___get_total_used_tokens_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___minimize_decoding_occupied_instances -> loongserve__longserve_server__router__manager__RouterManager___migrate_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___minimize_decoding_occupied_instances -> loongserve__longserve_server__router__manager__RouterManager___scale_down_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___minimize_decoding_occupied_instances -> loongserve__longserve_server__router__manager__RouterManager___merge_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___minimize_decoding_occupied_instances -> loongserve__longserve_server__router__manager__RouterManager___get_migration_time [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list -> loongserve__longserve_server__router__manager__RouterManager___prefill_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_new_req_list -> loongserve__longserve_server__router__manager__RouterManager___get_batch_prefill_migration_plan [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list_without_scale_up -> loongserve__longserve_server__router__manager__RouterManager___pause_reqs [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list_without_scale_up -> loongserve__longserve_server__router__manager__RouterManager___filter_running_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list_without_scale_up -> loongserve__longserve_server__router__manager__RouterManager___decode_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list_without_scale_up -> loongserve__longserve_server__router__manager__RouterManager___get_total_used_tokens_list [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list -> loongserve__longserve_server__router__manager__RouterManager___scale_up_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list -> loongserve__longserve_server__router__manager__RouterManager___decode_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list -> loongserve__longserve_server__router__manager__RouterManager___scale_down_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___schedule_decode_batch_list -> loongserve__longserve_server__router__manager__RouterManager___merge_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___prefill_batch -> loongserve__longserve_server__router__manager__RouterManager___prefill_batch__prefill_batch_wrapper [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___decode_batch -> loongserve__longserve_server__router__manager__RouterManager___decode_batch__decoding_batch_wrapper [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___merge_batch -> loongserve__longserve_server__router__manager__RouterManager___scale_up_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___handle_finish_req -> loongserve__longserve_server__router__manager__RouterManager___remove_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___handle_finish_req -> loongserve__longserve_server__router__manager__RouterManager___scale_down_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___handle_finish_req -> loongserve__longserve_server__router__manager__RouterManager___filter_batch [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager___send_to_detokenization_proc -> loongserve__longserve_server__router__manager__RouterManager__to_detokenization_processes [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager__loop_for_netio_req -> loongserve__longserve_server__router__manager__RouterManager__add_req [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__RouterManager__loop_for_netio_req -> loongserve__longserve_server__router__manager__RouterManager__abort [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__start_router_process -> loongserve__longserve_server__router__manager__RouterManager__loop_for_netio_req [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__start_router_process -> loongserve__longserve_server__router__manager__RouterManager____init__ [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__start_router_process -> loongserve__longserve_server__router__manager__RouterManager [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__start_router_process -> loongserve__longserve_server__router__manager__RouterManager__wait_to_model_ready [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__start_router_process -> loongserve__longserve_server__router__manager__RouterManager__clean_up [style="solid",  color="#000000"];
+        loongserve__longserve_server__router__manager__start_router_process -> loongserve__longserve_server__router__manager__RouterManager__loop_for_fwd [style="solid",  color="#000000"];
+    }

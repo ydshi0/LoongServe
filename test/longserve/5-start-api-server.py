@@ -29,9 +29,9 @@ def api_server_starter_routine(
     def get_lightllm_params(args):
         max_total_token_num = \
             110000 if args.tp == 1 else \
-            210000 if args.tp == 2 else \
-            500000 if args.tp == 4 else \
-            900000 if args.tp == 8 else \
+            220000 if args.tp == 2 else \
+            660000 if args.tp == 4 else \
+            1400000 if args.tp == 8 else \
             -1
         running_max_req_size = {
             "sharegpt": 1024,
@@ -121,8 +121,8 @@ python -u -m lightllm.server.api_server \\
     elif args.backend == "longserve" or args.backend == "longserve-fixsp":
         assert args.pp == 1, "Pipeline parallelism is not supported in LongServe."
         max_total_token_num, running_max_req_size, max_num_ooe = get_lightllm_params(args)
-        max_total_token_num = max_total_token_num // 5
-        max_req_len = min(max_total_token_num * args.sp, 500000)
+        max_total_token_num = max_total_token_num 
+        max_req_len = min(max_total_token_num * args.sp, 100000)
         script = f"""
 export CUDA_VISIBLE_DEVICES={gpu_ids};
 python -u -m loongserve.longserve_server.api_server \\
@@ -132,16 +132,16 @@ python -u -m loongserve.longserve_server.api_server \\
     --tp_world_size {args.tp} --sp_world_size {args.sp} \\
     --max_req_input_len {max_req_len-1} --max_req_total_len {max_req_len} \\
     --mode _token_decode_attention_overlapped \\
-    --batch_max_tokens 500000 \\
+    --batch_max_tokens 100000 \\
     --max_mig_len 10000 \\
-    --avg_decoding_time {22 if args.tp*args.sp <= 8 else 25} \\
+    --avg_decoding_time {41 if args.tp*args.sp <= 8 else 25} \\
     --nccl_port {28768+worker_index} \\
     --log_stats_interval 600 \\
-    --max_prefill_time 5000 \\
+    --max_prefill_time 25000 \\
     --local_world_size {min(gpus_per_worker, 8)} \\
     --max_wait_tokens 10 \\
-    --min_comp_bound_decoding_batch_size 128 \\
-    --profiler_file_path /workspace/result/analytical-model.csv \\
+    --min_comp_bound_decoding_batch_size 64 \\
+    --profiler_file_path /host_home/LoongServe/exp_result/analytical-model.csv \\
     --max_num_ooe {max_num_ooe} {"--use_fixed_sp" if args.backend == "longserve-fixsp" else ""} \\
     {f"--disable_scale_up" if args.disable_scale_up else ""} \\
     {f"--with_log_trace {args.with_log_trace}" if args.with_log_trace else ""}

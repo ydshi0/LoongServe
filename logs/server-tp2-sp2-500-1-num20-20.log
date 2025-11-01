@@ -1,0 +1,52 @@
+router_port: 10000, detokenization_port: 10001, httpserver_port: 10002, visual_port: 10003, cache_port: 10004
+[36m(RouterManager pid=1392994)[0m Starting the router on node a2
+[36m(RouterManager pid=1392994)[0m INFO 09-24 09:21:37 [manager.py:67] use_fixed_sp is False, use elastic sequence parallelism
+[36m(RouterManager pid=1392994)[0m start initializing Profiler, file: /host_home/LoongServe/exp_result/analytical-model.csv
+[36m(RouterManager pid=1392994)[0m DEBUG 09-24 09:21:37 [profiler.py:30] {'sp_world_size': '1', 'tp_world_size': '2', 'batch_size': '1.0', 'A': '14.802468653307391', 'B': '0.07151249576582751', 'C': '1.3627299618707012e-05'}
+[36m(RouterManager pid=1392994)[0m DEBUG 09-24 09:21:37 [profiler.py:30] {'sp_world_size': '2', 'tp_world_size': '2', 'batch_size': '1.0', 'A': '18.0503940436651', 'B': '0.05439132031429052', 'C': '-1.594451429526994e-05'}
+[36m(RouterManager pid=1392994)[0m Starting workers
+[36m(RouterManager pid=1392994)[0m Scheduling all workers into one node
+[36m(DeTokenizationManager pid=1392998)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=1392997)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=1392992)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=1393004)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=1392993)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=1393001)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=1392996)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(DeTokenizationManager pid=1392999)[0m INFO 09-24 09:21:40 [tokenizer.py:49] For some LLaMA-based models, initializing the fast tokenizer may take a long time. To eliminate the initialization time, consider using 'hf-internal-testing/llama-tokenizer' instead of the original tokenizer.
+[36m(autoscaler +11s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+[33m(autoscaler +11s)[0m Error: No available node types can fulfill resource request defaultdict(<class 'float'>, {'GPU': 4.0}). Add suitable node types to this cluster to resolve this issue.
+[36m(DeTokenizationManager pid=1392998)[0m Detokenization manager 2 init ok (on node a2)
+[36m(DeTokenizationManager pid=1392992)[0m Detokenization manager 5 init ok (on node a2)
+[36m(DeTokenizationManager pid=1392997)[0m Detokenization manager 6 init ok (on node a2)
+[36m(DeTokenizationManager pid=1393004)[0m Detokenization manager 7 init ok (on node a2)
+[36m(DeTokenizationManager pid=1392993)[0m Detokenization manager 0 init ok (on node a2)
+[36m(DeTokenizationManager pid=1393001)[0m Detokenization manager 3 init ok (on node a2)
+[36m(DeTokenizationManager pid=1392996)[0m Detokenization manager 1 init ok (on node a2)
+[36m(DeTokenizationManager pid=1392999)[0m Detokenization manager 4 init ok (on node a2)
+[33m(autoscaler +46s)[0m Error: No available node types can fulfill resource request defaultdict(<class 'float'>, {'GPU': 4.0}). Add suitable node types to this cluster to resolve this issue.
+Namespace(backend='longserve', model='/host_model/meta-llama/Meta-Llama-3.1-8B-Instruct', tp=2, pp=1, dp=1, sp=2, dataset='sharegpt', with_log_trace=None, ae_id='intlsy', disable_scale_up=False)
+Worker starting with port=8400
+Starting server with command 
+export CUDA_VISIBLE_DEVICES=0,1,2,3;
+python -u -m loongserve.longserve_server.api_server \
+    --host 0.0.0.0 --port 8400 \
+    --model_dir /host_model/meta-llama/Meta-Llama-3.1-8B-Instruct --tokenizer_mode auto \
+    --max_total_token_num 42000 --running_max_req_size 1024 \
+    --tp_world_size 2 --sp_world_size 2 \
+    --max_req_input_len 83999 --max_req_total_len 84000 \
+    --mode _token_decode_attention_overlapped \
+    --batch_max_tokens 500000 \
+    --max_mig_len 10000 \
+    --avg_decoding_time 22 \
+    --nccl_port 28768 \
+    --log_stats_interval 600 \
+    --max_prefill_time 5000 \
+    --local_world_size 4 \
+    --max_wait_tokens 10 \
+    --min_comp_bound_decoding_batch_size 128 \
+    --profiler_file_path /host_home/LoongServe/exp_result/analytical-model.csv \
+    --max_num_ooe 1  \
+     \
+    
+

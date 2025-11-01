@@ -501,8 +501,8 @@ class LongServeTransformerLayerInfer:
         else:
             for tensor, gather_list in zip(tensor_list, gather_list_list):
                 assert gather_list is None
-                if self.total_rank_ == 1:
-                    logger.info(f"gather send,{tensor.size()}")
+                # if self.total_rank_ == 1:
+                #     logger.info(f"gather send,{tensor.size()}")
                 self.sp_comm_.nccl_send(tensor, dst_rank//self.tp_world_size_)
     
     def _selective_scatter(self, tensor_list: List[torch.Tensor], scatter_list_list: List[List[torch.Tensor]], src_rank: int, selective_peer_ranks: List[int]):
@@ -511,8 +511,8 @@ class LongServeTransformerLayerInfer:
             for tensor, scatter_list in zip(tensor_list, scatter_list_list):
                 for i, peer_rank in enumerate(selective_peer_ranks):
                     if peer_rank != self.total_rank_:
-                        if self.total_rank_ == 1:
-                            logger.info(f"scatter send,{scatter_list[i].size()}")
+                        # if self.total_rank_ == 1:
+                        #     # logger.info(f"scatter send,{scatter_list[i].size()}")
                         self.sp_comm_.nccl_send(scatter_list[i], peer_rank//self.tp_world_size_)
                     else:
                         tensor.copy_(scatter_list[i], non_blocking=True)

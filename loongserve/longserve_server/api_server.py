@@ -199,6 +199,9 @@ async def generate_stream(request: Request) -> Response:
 async def chat_completions(
     request: ChatCompletionRequest, raw_request: Request
 ) -> Response:
+    # print(f"Received request: raw_request={raw_request}, request={request}")
+    # payload = await raw_request.json()
+    # print("RAW JSON:", payload)
     global isFirst
     if isFirst:
         loop = asyncio.get_event_loop()
@@ -235,6 +238,7 @@ async def chat_completions(
         stop_sequences=request.stop
     )
     sampling_params.verify()
+    # print(f"sampling_params: ignore_eos={sampling_params.ignore_eos}, max_new_tokens={sampling_params.max_new_tokens}")
 
     request_id = f"chatcmpl-{uuid.uuid4().hex}"
     results_generator = httpserver_manager.generate(prompt, sampling_params, request_id)
@@ -268,24 +272,29 @@ async def chat_completions(
             choices=[choice],
             usage=usage
         )
-        return resp
+        return JSONResponse(content=resp.model_dump(exclude_none=True))
 
     # Streaming case
     async def stream_results() -> AsyncGenerator[bytes, None]:
-        async for request_output, metadata, _ in results_generator:
-            delta_message = DeltaMessage(role="assistant", content=request_output)
+        try:
+            async for request_output, metadata, _ in results_generator:
+                delta_message = DeltaMessage(role="assistant", content=request_output)
 
-            stream_choice = ChatCompletionStreamResponseChoice(
-                index=0, delta=delta_message
-            )
+                stream_choice = ChatCompletionStreamResponseChoice(
+                    index=0, delta=delta_message
+                )
 
-            stream_resp = ChatCompletionStreamResponse(
-                id=request_id,
-                created=created_time,
-                model=request.model,
-                choices=[stream_choice],
-            )
-            yield ("data: " + stream_resp.json(ensure_ascii=False) + f"\n\n").encode("utf-8")
+                stream_resp = ChatCompletionStreamResponse(
+                    id=request_id,
+                    created=created_time,
+                    model=request.model,
+                    choices=[stream_choice],
+                )
+                chunk = stream_resp.model_dump_json(exclude_none=True)
+                # print("Chunk:", chunk)
+                yield f"data: {chunk}\n\n".encode("utf-8")
+        finally:
+            yield b"data: [DONE]\n\n"
 
     async def abort_request() -> None:
         await httpserver_manager.abort(request_id)
@@ -398,6 +407,7 @@ def main():
         num=5 + args.total_world_size, used_nccl_port_list=[args.nccl_port, 28765] # 28765: default NCCL port
     )
     router_port, detokenization_port, httpserver_port, visual_port, cache_port = can_use_ports[0:5]
+    print(f"router_port: {router_port}, detokenization_port: {detokenization_port}, httpserver_port: {httpserver_port}, visual_port: {visual_port}, cache_port: {cache_port}", flush=True)
     model_rpc_ports = can_use_ports[5:]
 
     # help to manage data stored on Ceph

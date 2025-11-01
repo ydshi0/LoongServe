@@ -117,7 +117,7 @@ def benchmark_serving(
 
     from transformers import PreTrainedTokenizerFast
     tokenizer = PreTrainedTokenizerFast.from_pretrained(
-        "/shared_LLM_model/meta-llama/Meta-Llama-3.1-8B-Instruct",
+        "/host_model/meta-llama/Meta-Llama-3.1-8B-Instruct",
         use_fast=True
     )
 

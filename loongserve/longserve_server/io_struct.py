@@ -45,7 +45,8 @@ class Req:
         self.sp_world_size = sp_world_size
         self.output_ids = []
         self.output_metadata_list = []
-
+        self.in_time = None
+        self.out_time = None
         self.req_status = ReqRunStatus.WAIT_IN_QUEUE
         self.finish_status = FinishStatus.NO_FINISH
         self.cur_kv_len_list = np.zeros((self.sp_world_size,), dtype=np.int32)

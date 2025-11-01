@@ -2,6 +2,7 @@ import uuid
 import asyncio
 import math
 import numpy as np
+import time
 from typing import List
 from ..io_struct import Batch, Req
 from .profiler import Profiler
@@ -32,6 +33,7 @@ class ReqQueue:
         self.disable_scale_up = args.disable_scale_up
         
     def append(self, req):
+        req.in_time = time.perf_counter()
         self.waiting_req_list.append(req)
         return
     
@@ -220,6 +222,9 @@ class ReqQueue:
                 self.num_ooe += 1
             else:
                 self.num_ooe = 0
+            for req in can_run_list:
+                req.out_time = time.perf_counter()
+                print(f"[Router ReqQueue] Req {req.request_id} in_time: {req.in_time:.4f}, out_time: {req.out_time:.4f}, total wait time: {req.out_time - req.in_time:.4f} seconds")
             self.waiting_req_list = new_waiting_req_list
             self.recalcu_pause_req_used_tokens_list()
             return can_run_list
